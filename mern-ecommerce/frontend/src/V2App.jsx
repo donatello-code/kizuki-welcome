@@ -7,7 +7,7 @@ import useStore from './store';
 import './index.css';
 
 const V2App = () => {
-  const [currentView, setCurrentView] = useState('landing'); // 'landing' | 'store'
+  const [currentView, setCurrentView] = useState('store'); // 'landing' | 'store'
   const [showCartModal, setShowCartModal] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const { cart } = useStore();
@@ -38,41 +38,12 @@ const V2App = () => {
       }}>
         <div 
           style={{ fontSize: '1.5rem', fontWeight: 800, cursor: 'pointer', letterSpacing: '2px' }}
-          onClick={() => setCurrentView('landing')}
+          onClick={() => setCurrentView('store')}
         >
           KIZUKI<span className="text-gradient">.</span>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-          <button 
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: currentView === 'landing' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: 600,
-              transition: 'color 0.3s ease'
-            }}
-            onClick={() => setCurrentView('landing')}
-          >
-            Home
-          </button>
-          <button 
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: currentView === 'store' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: 600,
-              transition: 'color 0.3s ease'
-            }}
-            onClick={() => setCurrentView('store')}
-          >
-            Store
-          </button>
-          
           <div 
             style={{ 
               display: 'flex', 

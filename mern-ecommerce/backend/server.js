@@ -163,13 +163,102 @@ async function getPayPalAccessToken() {
   return data.access_token;
 }
 
-// ─── Static product catalog ───────────────────────────────
+// ─── Products Table + Seed ────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    price INTEGER NOT NULL,
+    description TEXT,
+    image TEXT,
+    needs_size INTEGER DEFAULT 0,
+    quantity INTEGER NOT NULL DEFAULT 0
+  )
+`);
+
+// Seed products if empty
+const productCount = db.prepare('SELECT COUNT(*) as count FROM products').get();
+if (productCount.count === 0) {
+  const insert = db.prepare(`
+    INSERT INTO products (id, name, price, description, image, needs_size, quantity)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  insert.run(
+    'p_1', 'Symbolic Chessboard', 9900,
+    'A canvas for the quiet storm within. This is not merely a board — it is a second skin woven from midnight threads and the ghosts of forgotten games. Each square remembers the clack of ivory, the geometry of sacrifice, the silence between moves. Play on it, and the board follows you into the world. The pieces are already in play.',
+    '/cheeseboard-hoodie.png', 0, 14
+  );
+  insert.run(
+    'p_2', 'Chessboard in my Heart', 9900,
+    'Oversized, loose-fit cut that drapes like a second skin. Crafted from premium extra-thick sheer black fabric — heavy enough to hold its shape, light enough to move with you. The darkness is the point: a void that absorbs light, a silhouette that commands without shouting.',
+    '/hoodie-hero.png', 1, 47
+  );
+  console.log('✅ Products seeded: p_1=14, p_2=47');
+}
+
+// ─── GET /api/products ────────────────────────────────────
+app.get('/api/products', (req, res) => {
+  try {
+    const products = db.prepare('SELECT * FROM products ORDER BY id').all();
+    // Convert to frontend-friendly format (price in dollars, needs_size as boolean)
+    const formatted = products.map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.price / 100,
+      description: p.description,
+      image: p.image,
+      needsSize: p.needs_size === 1,
+      remaining: p.quantity,
+    }));
+    res.json({ products: formatted });
+  } catch (error) {
+    console.error('❌ Products fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+});
+
+// ─── Scarcity Cron: Subtract 0-3 every 30 min ─────────────
+function runScarcityTick() {
+  try {
+    const products = db.prepare('SELECT id, quantity FROM products').all();
+    const update = db.prepare('UPDATE products SET quantity = ? WHERE id = ?');
+    let totalDeducted = 0;
+
+    for (const product of products) {
+      if (product.quantity <= 0) continue; // Don't go below 0
+      const deduct = Math.floor(Math.random() * 4); // 0, 1, 2, or 3
+      const newQty = Math.max(0, product.quantity - deduct);
+      update.run(newQty, product.id);
+      totalDeducted += deduct;
+      if (deduct > 0) {
+        console.log(`📉 Scarcity: ${product.id} → ${product.quantity} → ${newQty} (deducted ${deduct})`);
+      }
+    }
+
+    if (totalDeducted > 0) {
+      console.log(`📉 Scarcity tick complete: ${totalDeducted} units deducted across all products`);
+    }
+  } catch (error) {
+    console.error('❌ Scarcity tick error:', error);
+  }
+}
+
+// Run scarcity tick every 30 minutes (1800000 ms)
+const SCARCITY_INTERVAL = 30 * 60 * 1000; // 30 minutes
+setInterval(runScarcityTick, SCARCITY_INTERVAL);
+console.log(`⏰ Scarcity cron scheduled: every 30 minutes (deducts 0-3 randomly)`);
+
+// Run one tick immediately on startup for testing
+runScarcityTick();
+
+// ─── Static product catalog (in-memory fallback) ──────────
 const PRODUCTS = {
   p_1: { id: 'p_1', name: 'Symbolic Chessboard', price: 9900 },
   p_2: { id: 'p_2', name: 'Chessboard in my Heart', price: 9900 },
 };
 
 // ─── Health check ─────────────────────────────────────────
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',

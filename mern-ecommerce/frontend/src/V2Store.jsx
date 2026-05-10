@@ -1,34 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useStore from './store';
 import AnimationMiddleware from './AnimationMiddleware';
 import SizeSelectorModal from './SizeSelectorModal';
 import ExtraChessboardModal from './ExtraChessboardModal';
 
-const PRODUCTS = [
-  { 
-    id: 'p_1', 
-    name: 'Symbolic Chessboard', 
-    price: 99, 
-    description: 'A canvas for the quiet storm within. This is not merely a board — it is a second skin woven from midnight threads and the ghosts of forgotten games. Each square remembers the clack of ivory, the geometry of sacrifice, the silence between moves. Play on it, and the board follows you into the world. The pieces are already in play.', 
-    image: '/cheeseboard-hoodie.png',
-    remaining: 14,
-    needsSize: false,
-  },
-  { 
-    id: 'p_2', 
-    name: 'Chessboard in my Heart', 
-    price: 99, 
-    description: 'Oversized, loose-fit cut that drapes like a second skin. Crafted from premium extra-thick sheer black fabric — heavy enough to hold its shape, light enough to move with you. The darkness is the point: a void that absorbs light, a silhouette that commands without shouting.', 
-    image: '/hoodie-hero.png',
-    remaining: 47,
-    needsSize: true,
-  },
-];
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 const V2Store = ({ onAddToCart }) => {
   const { addToCart } = useStore();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [sizeModalProduct, setSizeModalProduct] = useState(null);
   const [showExtraBoard, setShowExtraBoard] = useState(false);
+
+  // Fetch products from backend (live quantity from MySQL/SQLite)
+  useEffect(() => {
+    let mounted = true;
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/products`);
+        const data = await res.json();
+        if (mounted && data.products) {
+          setProducts(data.products);
+        }
+      } catch (err) {
+        console.error('Failed to fetch products:', err);
+        // Fallback to hardcoded defaults if backend is unreachable
+        if (mounted) {
+          setProducts([
+            { id: 'p_1', name: 'Symbolic Chessboard', price: 99, description: 'A canvas for the quiet storm within.', image: '/cheeseboard-hoodie.png', remaining: 14, needsSize: false },
+            { id: 'p_2', name: 'Chessboard in my Heart', price: 99, description: 'Oversized, loose-fit cut that drapes like a second skin.', image: '/hoodie-hero.png', remaining: 47, needsSize: true },
+          ]);
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchProducts();
+    // Re-fetch every 5 minutes to show updated scarcity numbers
+    const interval = setInterval(fetchProducts, 5 * 60 * 1000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
 
   const handleAddToCart = (product) => {
     addToCart(product);
@@ -52,7 +64,7 @@ const V2Store = ({ onAddToCart }) => {
   };
 
   const handleAddExtraBoard = (quantity) => {
-    const boardProduct = PRODUCTS[0]; // Symbolic Chessboard
+    const boardProduct = products[0]; // Symbolic Chessboard
     for (let i = 0; i < quantity; i++) {
       addToCart(boardProduct);
     }
@@ -94,7 +106,7 @@ const V2Store = ({ onAddToCart }) => {
         gap: '40px',
         alignItems: 'stretch',
       }}>
-        {PRODUCTS.map((product, index) => (
+        {products.map((product, index) => (
           <AnimationMiddleware key={product.id} delay={`delay-${(index + 1) * 200}`} animation="anim-scale-up">
             <div className="glass hover-lift" style={{ 
               borderRadius: 'var(--radius-lg)', 
