@@ -4,18 +4,6 @@ import AnimationMiddleware from './AnimationMiddleware';
 const V2Landing = ({ onShopClick }) => {
   return (
     <div style={{ padding: '120px 20px 60px', minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-      {/* Hero Background Image */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 0,
-        opacity: 0.12,
-        backgroundImage: 'url(/hoodie-hero.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        filter: 'blur(3px)',
-      }} />
-      
       <AnimationMiddleware className="text-center" animation="anim-fade-in-up" style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <span style={{
           display: 'inline-block',
