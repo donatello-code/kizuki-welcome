@@ -264,10 +264,10 @@ const StepProgress = ({ steps, currentStep }) => (
    CreditCardForm Component
    ───────────────────────────────────────────── */
 const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
-  const [cardName, setCardName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvv, setCvv] = useState('');
+  const [cardName, setCardName] = useState('John Doe');
+  const [cardNumber, setCardNumber] = useState('4111 1111 1111 1111');
+  const [expiry, setExpiry] = useState('12/28');
+  const [cvv, setCvv] = useState('123');
   const [errors, setErrors] = useState({});
   const [focusedField, setFocusedField] = useState(null);
 
