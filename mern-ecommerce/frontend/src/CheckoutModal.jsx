@@ -123,11 +123,11 @@ const btnBack = {
   background: 'var(--surface)',
   border: '1px solid var(--surface-border)',
   color: 'var(--text-secondary)',
-  padding: '14px 28px',
+  padding: '12px 24px',
   borderRadius: 'var(--radius-sm)',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  fontSize: '0.95rem',
+  fontSize: '0.85rem',
   fontWeight: 600,
   transition: 'all 0.3s ease',
 };
@@ -613,7 +613,7 @@ const CheckoutModal = ({ onClose }) => {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 style={btnBack}
-                onClick={showAltFlow ? onClose : onClose}
+                onClick={onClose}
               >
                 Back
               </button>

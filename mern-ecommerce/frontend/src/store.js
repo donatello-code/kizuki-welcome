@@ -8,14 +8,14 @@ const useStore = create(
       cart: [],
       userPhone: '',
       checkoutData: {
-        fullName: '',
-        email: '',
-        phone: '',
-        address: '',
-        apt: '',
-        city: '',
-        state: '',
-        zip: '',
+        fullName: 'John Doe',
+        email: 'john@example.com',
+        phone: '+1 (555) 123-4567',
+        address: '123 Main Street',
+        apt: 'Apt 4B',
+        city: 'New York',
+        state: 'NY',
+        zip: '10001',
       },
 
       // Actions
