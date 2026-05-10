@@ -1,21 +1,35 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// Set to false to disable test prefill in production
+const USE_PREFILL = true;
+
+const PREFILL_DATA = {
+  fullName: 'John Doe',
+  email: 'john@example.com',
+  phone: '+1 (555) 123-4567',
+  address: '123 Main Street',
+  apt: 'Apt 4B',
+  city: 'New York',
+  state: 'NY',
+  zip: '10001',
+};
+
 const useStore = create(
   persist(
     (set) => ({
       // State
       cart: [],
       userPhone: '',
-      checkoutData: {
-        fullName: 'John Doe',
-        email: 'john@example.com',
-        phone: '+1 (555) 123-4567',
-        address: '123 Main Street',
-        apt: 'Apt 4B',
-        city: 'New York',
-        state: 'NY',
-        zip: '10001',
+      checkoutData: USE_PREFILL ? { ...PREFILL_DATA } : {
+        fullName: '',
+        email: '',
+        phone: '',
+        address: '',
+        apt: '',
+        city: '',
+        state: '',
+        zip: '',
       },
 
       // Actions

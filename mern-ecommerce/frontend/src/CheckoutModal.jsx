@@ -263,11 +263,14 @@ const StepProgress = ({ steps, currentStep }) => (
 /* ─────────────────────────────────────────────
    CreditCardForm Component
    ───────────────────────────────────────────── */
+// Set to false to disable test prefill in production
+const USE_PREFILL = true;
+
 const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
-  const [cardName, setCardName] = useState('John Doe');
-  const [cardNumber, setCardNumber] = useState('4111 1111 1111 1111');
-  const [expiry, setExpiry] = useState('12/28');
-  const [cvv, setCvv] = useState('123');
+  const [cardName, setCardName] = useState(USE_PREFILL ? 'John Doe' : '');
+  const [cardNumber, setCardNumber] = useState(USE_PREFILL ? '4111 1111 1111 1111' : '');
+  const [expiry, setExpiry] = useState(USE_PREFILL ? '12/28' : '');
+  const [cvv, setCvv] = useState(USE_PREFILL ? '123' : '');
   const [errors, setErrors] = useState({});
   const [focusedField, setFocusedField] = useState(null);
 
