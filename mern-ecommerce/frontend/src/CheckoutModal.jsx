@@ -560,112 +560,38 @@ const CheckoutModal = ({ onClose }) => {
             <p style={subtitle}>Select how you'd like to pay</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Apple Pay — uses PayPal SDK (works on Safari macOS/iOS) */}
-              <button
+              {/* Apple Pay */}
+              <PaymentOption
+                icon={
+                  <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
+                    <path d="M14.5 11.5C14.5 14.5 12 17 9 17C6 17 3.5 14.5 3.5 11.5C3.5 8.5 6 6 9 6C12 6 14.5 8.5 14.5 11.5Z" fill="#000"/>
+                    <path d="M9 0C9 0 6 3 6 6C6 7.5 7 9 9 9C11 9 12 7.5 12 6C12 3 9 0 9 0Z" fill="#000"/>
+                    <path d="M9 17C6 17 3.5 19 3.5 22H14.5C14.5 19 12 17 9 17Z" fill="#000"/>
+                  </svg>
+                }
+                name="Apple Pay"
+                description="Fast, secure, and private — pay with Apple Pay"
                 onClick={() => handleSelectPaymentMethod('applepay')}
-                style={{
-                  height: '48px',
-                  width: '100%',
-                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  backgroundColor: '#000',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
-                  gap: '8px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#333'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#000'}
-              >
-                <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
-                  <path d="M14.5 11.5C14.5 14.5 12 17 9 17C6 17 3.5 14.5 3.5 11.5C3.5 8.5 6 6 9 6C12 6 14.5 8.5 14.5 11.5Z" fill="white"/>
-                  <path d="M9 0C9 0 6 3 6 6C6 7.5 7 9 9 9C11 9 12 7.5 12 6C12 3 9 0 9 0Z" fill="white"/>
-                  <path d="M9 17C6 17 3.5 19 3.5 22H14.5C14.5 19 12 17 9 17Z" fill="white"/>
-                </svg>
-                <span>Apple Pay</span>
-              </button>
+                isSelected={paymentMethod === 'applepay'}
+              />
 
-              {/* PayPal — native button */}
-              <PayPalScriptProvider
-                options={{
-                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
-                  currency: "USD",
-                  intent: "capture",
-                  "enable-funding": "paypal",
-                }}
-              >
-                <PayPalButtons
-                  style={{
-                    layout: "vertical",
-                    color: "gold",
-                    shape: "rect",
-                    label: "paypal",
-                    height: 48,
-                  }}
-                  createOrder={(data, actions) => {
-                    return actions.order.create({
-                      purchase_units: [{
-                        description: "KIZUKI Store Purchase",
-                        amount: { value: cartTotal.toFixed(2) },
-                      }],
-                    });
-                  }}
-                  onApprove={async (data, actions) => {
-                    try {
-                      const details = await actions.order.capture();
-                      console.log("Payment Details:", details);
-                      const orderData = {
-                        ...checkoutData,
-                        items: cart,
-                        total: cartTotal,
-                        paypalOrderId: data.orderID,
-                        payer: details.payer,
-                        paymentMethod: 'paypal',
-                        timestamp: new Date().toISOString(),
-                      };
-                      console.log('Order submitted:', orderData);
-                      clearCart();
-                      onClose();
-                    } catch (error) {
-                      console.error("Payment Capture Error:", error);
-                    }
-                  }}
-                  onError={(err) => console.error("PayPal Error:", err)}
-                  onCancel={() => console.log("User cancelled the payment process.")}
-                />
-              </PayPalScriptProvider>
+              {/* PayPal */}
+              <PaymentOption
+                icon={<span style={{ color: '#0070BA' }}>🅿️</span>}
+                name="PayPal"
+                description="Pay with your PayPal account"
+                onClick={() => handleSelectPaymentMethod('paypal')}
+                isSelected={paymentMethod === 'paypal'}
+              />
 
-              {/* Credit Card — custom button matching Apple Pay style */}
-              <button
+              {/* Credit Card */}
+              <PaymentOption
+                icon={<span>💳</span>}
+                name="Credit Card"
+                description="Pay with any major credit or debit card"
                 onClick={() => handleSelectPaymentMethod('card')}
-                style={{
-                  height: '48px',
-                  width: '100%',
-                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  backgroundColor: '#2c2e2f',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
-                  gap: '8px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#444'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#2c2e2f'}
-              >
-                <span>💳</span> Credit Card
-              </button>
+                isSelected={paymentMethod === 'card'}
+              />
             </div>
 
           </>
