@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Set to false to disable test prefill in production
-const USE_PREFILL = true;
+const USE_PREFILL = false;
 
 const PREFILL_DATA = {
   fullName: 'John Doe',
