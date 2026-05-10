@@ -414,9 +414,7 @@ const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
    ───────────────────────────────────────────── */
 const CheckoutModal = ({ onClose }) => {
   const { cart, checkoutData, setCheckoutData, clearCart } = useStore();
-  const [step, setStep] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState(null);
-  const [showAltFlow, setShowAltFlow] = useState(false);
+  const [step, setStep] = useState(1);
   const [focusedField, setFocusedField] = useState(null);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -466,29 +464,6 @@ const CheckoutModal = ({ onClose }) => {
       }, 200);
     }
   }, [step, checkoutData]);
-
-  const handleSelectPaymentMethod = (method) => {
-    setPaymentMethod(method);
-    if (method === 'paypal' || method === 'applepay') {
-      setStep(4);
-    } else if (method === 'card') {
-      if (shippingComplete) {
-        setStep(3);
-      } else {
-        setStep(1);
-      }
-    }
-  };
-
-  const handleSkipToAltFlow = () => {
-    setShowAltFlow(true);
-    setPaymentMethod('card');
-    if (shippingComplete) {
-      setStep(3);
-    } else {
-      setStep(1);
-    }
-  };
 
   const handleCardSubmit = async (cardData) => {
     setCardProcessing(true);
@@ -553,50 +528,6 @@ const CheckoutModal = ({ onClose }) => {
       <div style={modalContent} className="hide-scrollbar">
         <button style={closeBtn} onClick={onClose}>×</button>
 
-        {/* ── Step 0: Payment Method Selection ── */}
-        {step === 0 && (
-          <>
-            <h3 style={title}>Choose Your Move</h3>
-            <p style={subtitle}>Select how you'd like to pay</p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Apple Pay */}
-              <PaymentOption
-                icon={
-                  <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
-                    <path d="M14.5 11.5C14.5 14.5 12 17 9 17C6 17 3.5 14.5 3.5 11.5C3.5 8.5 6 6 9 6C12 6 14.5 8.5 14.5 11.5Z" fill="#000"/>
-                    <path d="M9 0C9 0 6 3 6 6C6 7.5 7 9 9 9C11 9 12 7.5 12 6C12 3 9 0 9 0Z" fill="#000"/>
-                    <path d="M9 17C6 17 3.5 19 3.5 22H14.5C14.5 19 12 17 9 17Z" fill="#000"/>
-                  </svg>
-                }
-                name="Apple Pay"
-                description="Fast, secure, and private — pay with Apple Pay"
-                onClick={() => handleSelectPaymentMethod('applepay')}
-                isSelected={paymentMethod === 'applepay'}
-              />
-
-              {/* PayPal */}
-              <PaymentOption
-                icon={<span style={{ color: '#0070BA' }}>🅿️</span>}
-                name="PayPal"
-                description="Pay with your PayPal account"
-                onClick={() => handleSelectPaymentMethod('paypal')}
-                isSelected={paymentMethod === 'paypal'}
-              />
-
-              {/* Credit Card */}
-              <PaymentOption
-                icon={<span>💳</span>}
-                name="Credit Card"
-                description="Pay with any major credit or debit card"
-                onClick={() => handleSelectPaymentMethod('card')}
-                isSelected={paymentMethod === 'card'}
-              />
-            </div>
-
-          </>
-        )}
-
         {/* ── Step 1: Identity ── */}
         {step === 1 && (
           <>
@@ -657,7 +588,7 @@ const CheckoutModal = ({ onClose }) => {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 style={btnBack}
-                onClick={showAltFlow ? onClose : () => { setStep(0); setPaymentMethod(null); }}
+                onClick={onClose}
               >
                 Back
               </button>
@@ -1050,88 +981,6 @@ const CheckoutModal = ({ onClose }) => {
           </>
         )}
 
-        {/* ── Step 4: PayPal Direct ── */}
-        {step === 4 && (
-          <>
-            <h3 style={title}>Complete Your Purchase</h3>
-            <p style={subtitle}>Review your order and complete payment</p>
-
-            <div style={summaryCard}>
-              {cart.map((item) => (
-                <div key={item.id} style={summaryRow}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>&times; {item.quantity}</div>
-                  </div>
-                  <div style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                    ${item.price * item.quantity}
-                  </div>
-                </div>
-              ))}
-              <div style={summaryTotal}>
-                <span>Total</span>
-                <span className="text-gradient">${cartTotal}</span>
-              </div>
-            </div>
-
-            {(paymentMethod === 'paypal' || paymentMethod === 'applepay') && (
-              <PayPalScriptProvider
-                options={{
-                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
-                  currency: "USD",
-                  intent: "capture",
-                  "enable-funding": "applepay",
-                }}
-              >
-                <PayPalButtons
-                  style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal" }}
-                  createOrder={(data, actions) => {
-                    return actions.order.create({
-                      purchase_units: [{
-                        description: "KIZUKI Store Purchase",
-                        amount: { value: cartTotal.toFixed(2) },
-                      }],
-                    });
-                  }}
-                  onApprove={async (data, actions) => {
-                    try {
-                      const details = await actions.order.capture();
-                      console.log("Payment Details:", details);
-                      const orderData = {
-                        ...checkoutData,
-                        items: cart,
-                        total: cartTotal,
-                        paypalOrderId: data.orderID,
-                        payer: details.payer,
-                        paymentMethod: 'paypal',
-                        timestamp: new Date().toISOString(),
-                      };
-                      console.log('Order submitted:', orderData);
-                      clearCart();
-                      onClose();
-                    } catch (error) {
-                      console.error("Payment Capture Error:", error);
-                    }
-                  }}
-                  onError={(err) => console.error("PayPal Error:", err)}
-                  onCancel={() => console.log("User cancelled the payment process.")}
-                />
-              </PayPalScriptProvider>
-            )}
-
-            <button
-              style={{
-                ...btnBack,
-                width: '100%',
-                marginTop: '16px',
-                textAlign: 'center',
-              }}
-              onClick={() => setStep(0)}
-            >
-              Back to Payment Options
-            </button>
-          </>
-        )}
       </div>
     </div>
   );
