@@ -579,7 +579,7 @@ const CheckoutModal = ({ onClose }) => {
               {/* PayPal — native button, matching height/border-radius */}
               <PayPalScriptProvider
                 options={{
-                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "YOUR_PAYPAL_CLIENT_ID",
+                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
                   currency: "USD",
                   intent: "capture",
                   "enable-funding": "paypal",
@@ -1067,7 +1067,7 @@ const CheckoutModal = ({ onClose }) => {
                 }}>
                   <PayPalScriptProvider
                     options={{
-                      "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "YOUR_PAYPAL_CLIENT_ID",
+                      "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
                       currency: "USD",
                       intent: "capture",
                       "enable-funding": "applepay",
@@ -1153,7 +1153,7 @@ const CheckoutModal = ({ onClose }) => {
             {paymentMethod === 'paypal' && (
               <PayPalScriptProvider
                 options={{
-                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "YOUR_PAYPAL_CLIENT_ID",
+                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
                   currency: "USD",
                   intent: "capture",
                   "enable-funding": "applepay",
