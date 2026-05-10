@@ -6,6 +6,7 @@ const SIZES = [
   { label: 'M', available: true },
   { label: 'L', available: true },
   { label: 'XL', available: true },
+  { label: 'XXL', available: true },
 ];
 
 const modalOverlay = {
@@ -122,7 +123,7 @@ const SizeSelectorModal = ({ product, onClose, onConfirm }) => {
           {/* Size Grid — cinematic, smaller pills */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
+            gridTemplateColumns: 'repeat(6, 1fr)',
             gap: '6px',
             marginBottom: '32px',
           }}>
