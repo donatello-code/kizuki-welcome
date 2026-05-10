@@ -415,6 +415,8 @@ const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
 const CheckoutModal = ({ onClose }) => {
   const { cart, checkoutData, setCheckoutData, clearCart } = useStore();
   const [step, setStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState(null);
+  const [showAltFlow, setShowAltFlow] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -464,6 +466,29 @@ const CheckoutModal = ({ onClose }) => {
       }, 200);
     }
   }, [step, checkoutData]);
+
+  const handleSelectPaymentMethod = (method) => {
+    setPaymentMethod(method);
+    if (method === 'paypal' || method === 'applepay') {
+      setStep(4);
+    } else if (method === 'card') {
+      if (shippingComplete) {
+        setStep(3);
+      } else {
+        setStep(1);
+      }
+    }
+  };
+
+  const handleSkipToAltFlow = () => {
+    setShowAltFlow(true);
+    setPaymentMethod('card');
+    if (shippingComplete) {
+      setStep(3);
+    } else {
+      setStep(1);
+    }
+  };
 
   const handleCardSubmit = async (cardData) => {
     setCardProcessing(true);
@@ -588,7 +613,7 @@ const CheckoutModal = ({ onClose }) => {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 style={btnBack}
-                onClick={onClose}
+                onClick={showAltFlow ? onClose : onClose}
               >
                 Back
               </button>
@@ -981,6 +1006,88 @@ const CheckoutModal = ({ onClose }) => {
           </>
         )}
 
+        {/* ── Step 4: PayPal Direct ── */}
+        {step === 4 && (
+          <>
+            <h3 style={title}>Complete Your Purchase</h3>
+            <p style={subtitle}>Review your order and complete payment</p>
+
+            <div style={summaryCard}>
+              {cart.map((item) => (
+                <div key={item.id} style={summaryRow}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>&times; {item.quantity}</div>
+                  </div>
+                  <div style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                    ${item.price * item.quantity}
+                  </div>
+                </div>
+              ))}
+              <div style={summaryTotal}>
+                <span>Total</span>
+                <span className="text-gradient">${cartTotal}</span>
+              </div>
+            </div>
+
+            {(paymentMethod === 'paypal' || paymentMethod === 'applepay') && (
+              <PayPalScriptProvider
+                options={{
+                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
+                  currency: "USD",
+                  intent: "capture",
+                  "enable-funding": "applepay",
+                }}
+              >
+                <PayPalButtons
+                  style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal" }}
+                  createOrder={(data, actions) => {
+                    return actions.order.create({
+                      purchase_units: [{
+                        description: "KIZUKI Store Purchase",
+                        amount: { value: cartTotal.toFixed(2) },
+                      }],
+                    });
+                  }}
+                  onApprove={async (data, actions) => {
+                    try {
+                      const details = await actions.order.capture();
+                      console.log("Payment Details:", details);
+                      const orderData = {
+                        ...checkoutData,
+                        items: cart,
+                        total: cartTotal,
+                        paypalOrderId: data.orderID,
+                        payer: details.payer,
+                        paymentMethod: 'paypal',
+                        timestamp: new Date().toISOString(),
+                      };
+                      console.log('Order submitted:', orderData);
+                      clearCart();
+                      onClose();
+                    } catch (error) {
+                      console.error("Payment Capture Error:", error);
+                    }
+                  }}
+                  onError={(err) => console.error("PayPal Error:", err)}
+                  onCancel={() => console.log("User cancelled the payment process.")}
+                />
+              </PayPalScriptProvider>
+            )}
+
+            <button
+              style={{
+                ...btnBack,
+                width: '100%',
+                marginTop: '16px',
+                textAlign: 'center',
+              }}
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
