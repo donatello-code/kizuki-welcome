@@ -123,11 +123,11 @@ const btnBack = {
   background: 'var(--surface)',
   border: '1px solid var(--surface-border)',
   color: 'var(--text-secondary)',
-  padding: '12px 24px',
+  padding: '16px 24px',
   borderRadius: 'var(--radius-sm)',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  fontSize: '0.85rem',
+  fontSize: '1rem',
   fontWeight: 600,
   transition: 'all 0.3s ease',
 };
