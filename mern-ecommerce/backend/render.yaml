@@ -2,11 +2,19 @@ services:
   - type: web
     name: kizuki-backend
     env: node
+    region: oregon
+    plan: starter
     buildCommand: npm install
     startCommand: node server.js
+    healthCheckPath: /health
+    rootDir: mern-ecommerce/backend
     envVars:
       - key: PORT
         value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: RENDER_DISK_PATH
+        value: /opt/render/project/src
       - key: EMAIL_HOST
         sync: false
       - key: EMAIL_PORT
@@ -17,3 +25,9 @@ services:
         sync: false
       - key: EMAIL_TO
         sync: false
+      - key: CORS_ORIGIN
+        value: https://kizuki-frontend.onrender.com
+    disk:
+      name: kizuki-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

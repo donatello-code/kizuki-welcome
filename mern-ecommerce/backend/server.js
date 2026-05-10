@@ -3,23 +3,46 @@ const cors = require('cors');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// ─── CORS Configuration ───────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5000',
+  'https://kizuki-frontend.onrender.com',
+  process.env.CORS_ORIGIN,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all in production for now
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // ─── SQLite Database ──────────────────────────────────────
-const dbPath = path.join(__dirname, 'data', 'kizuki.db');
+// On Render, use the persistent disk mount path if available
+const DATA_DIR = process.env.RENDER_DISK_PATH 
+  ? path.join(process.env.RENDER_DISK_PATH, 'data')
+  : path.join(__dirname, 'data');
+
 // Ensure data directory exists
-const fs = require('fs');
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
+
+const dbPath = path.join(DATA_DIR, 'kizuki.db');
 
 const db = new Database(dbPath);
 
