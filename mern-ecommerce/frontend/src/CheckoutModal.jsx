@@ -469,7 +469,7 @@ const CheckoutModal = ({ onClose }) => {
 
   const handleSelectPaymentMethod = (method) => {
     setPaymentMethod(method);
-    if (method === 'paypal') {
+    if (method === 'paypal' || method === 'applepay') {
       setStep(4);
     } else if (method === 'card') {
       if (shippingComplete) {
@@ -560,6 +560,37 @@ const CheckoutModal = ({ onClose }) => {
             <p style={subtitle}>Select how you'd like to pay</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Apple Pay — uses PayPal SDK (works on Safari macOS/iOS) */}
+              <button
+                onClick={() => handleSelectPaymentMethod('applepay')}
+                style={{
+                  height: '48px',
+                  width: '100%',
+                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  backgroundColor: '#000',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s ease',
+                  gap: '8px',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#333'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#000'}
+              >
+                <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
+                  <path d="M14.5 11.5C14.5 14.5 12 17 9 17C6 17 3.5 14.5 3.5 11.5C3.5 8.5 6 6 9 6C12 6 14.5 8.5 14.5 11.5Z" fill="white"/>
+                  <path d="M9 0C9 0 6 3 6 6C6 7.5 7 9 9 9C11 9 12 7.5 12 6C12 3 9 0 9 0Z" fill="white"/>
+                  <path d="M9 17C6 17 3.5 19 3.5 22H14.5C14.5 19 12 17 9 17Z" fill="white"/>
+                </svg>
+                <span>Apple Pay</span>
+              </button>
+
               {/* PayPal — native button */}
               <PayPalScriptProvider
                 options={{
@@ -637,23 +668,6 @@ const CheckoutModal = ({ onClose }) => {
               </button>
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <button
-                onClick={handleSkipToAltFlow}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  fontSize: '0.85rem',
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '3px',
-                }}
-              >
-                Or pay after entering shipping details
-              </button>
-            </div>
           </>
         )}
 
@@ -1134,7 +1148,7 @@ const CheckoutModal = ({ onClose }) => {
               </div>
             </div>
 
-            {paymentMethod === 'paypal' && (
+            {(paymentMethod === 'paypal' || paymentMethod === 'applepay') && (
               <PayPalScriptProvider
                 options={{
                   "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
