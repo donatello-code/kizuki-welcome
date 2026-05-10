@@ -1,0 +1,16 @@
+{
+  "name": "mern-ecommerce",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MERN E-Commerce with Zustand, Stripe, inline styling",
+  "scripts": {
+    "dev": "node dev.js",
+    "dev:backend": "cd backend && node server.js",
+    "dev:frontend": "cd frontend && npx vite --port 5173",
+    "build": "cd frontend && npx vite build",
+    "start": "cd backend && node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
