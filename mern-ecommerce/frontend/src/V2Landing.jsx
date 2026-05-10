@@ -62,8 +62,8 @@ const V2Landing = ({ onShopClick }) => {
             <div style={{ background: 'var(--surface-border)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontWeight: 600 }}>Delivered in Silence</h3>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, fontSize: '0.9rem' }}>Your piece arrives 6/11. Discreet. Reverent.</p>
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontWeight: 600 }}>Delivered For The Start Of The WC</h3>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, fontSize: '0.9rem' }}>Your piece arrives June 11. Discreet. Reverent.</p>
           </div>
         </div>
       </AnimationMiddleware>

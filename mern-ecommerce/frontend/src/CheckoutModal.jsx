@@ -469,7 +469,7 @@ const CheckoutModal = ({ onClose }) => {
 
   const handleSelectPaymentMethod = (method) => {
     setPaymentMethod(method);
-    if (method === 'paypal' || method === 'applepay') {
+    if (method === 'paypal') {
       setStep(4);
     } else if (method === 'card') {
       if (shippingComplete) {
@@ -560,23 +560,7 @@ const CheckoutModal = ({ onClose }) => {
             <p style={subtitle}>Select how you'd like to pay</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Apple Pay — native button */}
-              <apple-pay-button
-                buttonstyle="black"
-                type="buy"
-                locale="en-US"
-                onClick={() => handleSelectPaymentMethod('applepay')}
-                style={{
-                  '--apple-pay-button-width': '100%',
-                  '--apple-pay-button-height': '48px',
-                  '--apple-pay-button-border-radius': '4px',
-                  '--apple-pay-button-padding': '0px',
-                  cursor: 'pointer',
-                  display: 'block',
-                }}
-              ></apple-pay-button>
-
-              {/* PayPal — native button, matching height/border-radius */}
+              {/* PayPal — native button */}
               <PayPalScriptProvider
                 options={{
                   "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
@@ -1126,7 +1110,7 @@ const CheckoutModal = ({ onClose }) => {
           </>
         )}
 
-        {/* ── Step 4: PayPal / Apple Pay Direct ── */}
+        {/* ── Step 4: PayPal Direct ── */}
         {step === 4 && (
           <>
             <h3 style={title}>Complete Your Purchase</h3>
@@ -1193,25 +1177,6 @@ const CheckoutModal = ({ onClose }) => {
                   onCancel={() => console.log("User cancelled the payment process.")}
                 />
               </PayPalScriptProvider>
-            )}
-
-            {paymentMethod === 'applepay' && (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <apple-pay-button
-                  buttonstyle="black"
-                  type="buy"
-                  locale="en-US"
-                  onClick={() => handleSelectPaymentMethod('applepay')}
-                  style={{
-                    '--apple-pay-button-width': '100%',
-                    '--apple-pay-button-height': '48px',
-                    '--apple-pay-button-border-radius': '4px',
-                    '--apple-pay-button-padding': '0px',
-                    cursor: 'pointer',
-                    display: 'block',
-                  }}
-                ></apple-pay-button>
-              </div>
             )}
 
             <button

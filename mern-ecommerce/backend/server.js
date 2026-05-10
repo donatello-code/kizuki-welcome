@@ -144,6 +144,25 @@ Card: ${order.card_brand || 'Unknown'} ending in ${order.card_last_four}
   }
 }
 
+// ─── PayPal API helpers ───────────────────────────────────
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+const PAYPAL_API = process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
+
+async function getPayPalAccessToken() {
+  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
+  const response = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  const data = await response.json();
+  return data.access_token;
+}
+
 // ─── Static product catalog ───────────────────────────────
 const PRODUCTS = {
   p_1: { id: 'p_1', name: 'Symbolic Chessboard', price: 9900 },
@@ -256,10 +275,66 @@ app.get('/api/admin/orders', (req, res) => {
   }
 });
 
+// ─── PayPal: Create Order ─────────────────────────────────
+app.post('/paypal-api/checkout/orders/create-with-sample-data', async (req, res) => {
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const { total } = req.body;
+
+    const response = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: {
+            currency_code: 'USD',
+            value: total ? total.toFixed(2) : '99.00',
+          },
+          description: 'KIZUKI Store Purchase',
+        }],
+      }),
+    });
+
+    const data = await response.json();
+    res.json({ id: data.id });
+  } catch (error) {
+    console.error('❌ PayPal create order error:', error);
+    res.status(500).json({ error: 'Failed to create PayPal order' });
+  }
+});
+
+// ─── PayPal: Capture Order ────────────────────────────────
+app.post('/paypal-api/checkout/orders/:id/capture', async (req, res) => {
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const { id } = req.params;
+
+    const response = await fetch(`${PAYPAL_API}/v2/checkout/orders/${id}/capture`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('❌ PayPal capture order error:', error);
+    res.status(500).json({ error: 'Failed to capture PayPal order' });
+  }
+});
+
 // ─── Start server ─────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 KIZUKI backend running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/health`);
   console.log(`   Orders: POST http://localhost:${PORT}/api/orders`);
   console.log(`   Admin:  GET  http://localhost:${PORT}/api/admin/orders`);
+  console.log(`   PayPal: POST http://localhost:${PORT}/paypal-api/checkout/orders/create-with-sample-data`);
+  console.log(`   PayPal: POST http://localhost:${PORT}/paypal-api/checkout/orders/:id/capture`);
 });
