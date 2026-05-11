@@ -4,7 +4,8 @@ import Checkout from './Checkout';
 import theme, { sharedStyles } from './theme';
 
 const PRODUCTS = [
-  { id: 'p_1', name: 'Cheeseboard Hoodie', price: 85, description: 'A canvas for the quiet storm within. This is not merely a garment — it is a second skin woven from midnight threads and the ghosts of forgotten games. Each fiber remembers the clack of ivory, the geometry of sacrifice, the silence between moves. Wear it, and the board follows you into the world. The pieces are already in play.' },
+  { id: 'p_1', name: 'Chessboard', price: 99, description: 'A canvas for the quiet storm within. This is not merely a board — it is a second skin woven from midnight threads and the ghosts of forgotten games. Each square remembers the clack of ivory, the geometry of sacrifice, the silence between moves. Play on it, and the board follows you into the world. The pieces are already in play.' },
+  { id: 'p_2', name: 'Hoodie', price: 99, description: 'Oversized, loose-fit cut that drapes like a second skin. Crafted from premium extra-thick sheer black fabric — heavy enough to hold its shape, light enough to move with you. The darkness is the point: a void that absorbs light, a silhouette that commands without shouting.' },
 ];
 
 const { colors, spacing, radius, font, transition } = theme;

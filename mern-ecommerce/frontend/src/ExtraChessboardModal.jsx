@@ -60,7 +60,7 @@ const ExtraChessboardModal = ({ onClose, onSkip, onAddBoard }) => {
         }}>
           <img 
             src="/cheeseboard-hoodie.png" 
-            alt="Symbolic Chessboard"
+            alt="Chessboard"
             style={{
               width: '100%',
               height: '100%',

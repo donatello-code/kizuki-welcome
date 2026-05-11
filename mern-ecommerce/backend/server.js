@@ -186,12 +186,12 @@ if (productCount.count === 0) {
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
   insert.run(
-    'p_1', 'Symbolic Chessboard', 9900,
+    'p_1', 'Chessboard', 9900,
     'A canvas for the quiet storm within. This is not merely a board — it is a second skin woven from midnight threads and the ghosts of forgotten games. Each square remembers the clack of ivory, the geometry of sacrifice, the silence between moves. Play on it, and the board follows you into the world. The pieces are already in play.',
     '/cheeseboard-hoodie.png', 0, 14
   );
   insert.run(
-    'p_2', 'Chessboard in my Heart', 9900,
+    'p_2', 'Hoodie', 9900,
     'Oversized, loose-fit cut that drapes like a second skin. Crafted from premium extra-thick sheer black fabric — heavy enough to hold its shape, light enough to move with you. The darkness is the point: a void that absorbs light, a silhouette that commands without shouting.',
     '/hoodie-hero.png', 1, 47
   );
@@ -255,8 +255,8 @@ runScarcityTick();
 
 // ─── Static product catalog (in-memory fallback) ──────────
 const PRODUCTS = {
-  p_1: { id: 'p_1', name: 'Symbolic Chessboard', price: 9900 },
-  p_2: { id: 'p_2', name: 'Chessboard in my Heart', price: 9900 },
+  p_1: { id: 'p_1', name: 'Chessboard', price: 9900 },
+  p_2: { id: 'p_2', name: 'Hoodie', price: 9900 },
 };
 
 // ─── Health check ─────────────────────────────────────────
