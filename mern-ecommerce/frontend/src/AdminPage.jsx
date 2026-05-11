@@ -721,22 +721,22 @@ const AdminPage = ({ onBackToStore }) => {
                     style={{ flex: 1, padding: '12px' }}
                     onClick={() => {
                       setProducts(prev => prev.map(p =>
-                        p.id === 'p_1' ? { ...p, quantity: 97 } : p
-                      ));
-                    }}
-                  >
-                    Reset Chessboard → 97
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    style={{ flex: 1, padding: '12px' }}
-                    onClick={() => {
-                      setProducts(prev => prev.map(p =>
-                        p.id === 'p_2' ? { ...p, quantity: 94 } : p
-                      ));
-                    }}
-                  >
-                    Reset Hoodie → 94
+                      p.id === 'p_1' ? { ...p, quantity: 96 } : p
+                    ));
+                  }}
+                >
+                  Reset Chessboard → 96
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  style={{ flex: 1, padding: '12px' }}
+                  onClick={() => {
+                    setProducts(prev => prev.map(p =>
+                      p.id === 'p_2' ? { ...p, quantity: 93 } : p
+                    ));
+                  }}
+                >
+                  Reset Hoodie → 93
                   </button>
                 </div>
               </>
