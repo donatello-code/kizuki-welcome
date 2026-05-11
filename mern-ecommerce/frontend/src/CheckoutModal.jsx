@@ -499,6 +499,9 @@ const CheckoutModal = ({ onClose }) => {
   };
 
   const handleCardSubmit = async (cardData) => {
+    // Save cardholder name to checkoutData state so it persists
+    setCheckoutData({ ...checkoutData, cardholderName: cardData.cardName });
+
     setCardProcessing(true);
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -716,7 +719,7 @@ const CheckoutModal = ({ onClose }) => {
                     </linearGradient>
                   </defs>
                 </svg>
-                <span>PayPal / Credit Card</span>
+                <span>PayPal Card Pay</span>
               </button>
 
               {/* Inline Credit Card Form */}
