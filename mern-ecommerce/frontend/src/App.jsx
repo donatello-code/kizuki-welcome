@@ -106,6 +106,8 @@ function App() {
   const [showCheckout, setShowCheckout] = useState(false);
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const shipping = cartTotal >= 149 ? 0 : 14;
+  const total = cartTotal + shipping;
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -163,12 +165,17 @@ function App() {
                 </div>
               </div>
             ))}
-            <div style={styles.totalText}>Total: ${cartTotal}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+              Subtotal: ${cartTotal.toFixed(2)}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: shipping === 0 ? 'var(--accent)' : 'var(--text-secondary)', marginBottom: '8px', fontWeight: shipping === 0 ? 700 : 400 }}>
+              Shipping: {shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}
+            </div>
+            <div style={styles.totalText}>Total: ${total.toFixed(2)}</div>
           </>
         )}
 
-        {/* Checkout Section — commented out (duplicate "Complete Your Purchase" screen) */}
-        {/*
+        {/* Checkout Section */}
         <div style={{ ...sharedStyles.card, marginTop: spacing.xxxl }}>
           <h2 style={{ ...sharedStyles.sectionTitle, marginTop: 0 }}>Checkout</h2>
           <input
@@ -195,7 +202,6 @@ function App() {
             <Checkout />
           )}
         </div>
-        */}
       </main>
     </div>
   );

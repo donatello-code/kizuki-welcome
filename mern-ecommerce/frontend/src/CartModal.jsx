@@ -1,5 +1,6 @@
 import React from 'react';
 import useStore from './store';
+import { calcSubtotal, calcShipping, calcTotal, getShippingText, getFreeShippingProgress, FREE_SHIPPING_THRESHOLD } from './shipping';
 
 const modalOverlay = {
   position: 'fixed',
@@ -41,7 +42,10 @@ const closeBtn = {
 
 const CartModal = ({ onClose, onCheckout }) => {
   const { cart, removeFromCart } = useStore();
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = calcSubtotal(cart);
+  const shipping = calcShipping(subtotal);
+  const total = calcTotal(cart);
+  const freeShippingMsg = getFreeShippingProgress(subtotal);
 
   return (
     <div style={modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -94,12 +98,55 @@ const CartModal = ({ onClose, onCheckout }) => {
               ))}
             </div>
 
+            {/* Free shipping progress */}
+            {freeShippingMsg && (
+              <div style={{
+                textAlign: 'center',
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)',
+                marginBottom: '12px',
+                padding: '8px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.15)',
+              }}>
+                {freeShippingMsg}
+              </div>
+            )}
+
+            {/* Subtotal */}
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              borderTop: '1px solid var(--surface-border)', paddingTop: '20px', marginBottom: '24px'
+              padding: '4px 0',
             }}>
-              <span style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Total</span>
-              <span style={{ fontSize: '1.75rem', fontWeight: 800 }} className="text-gradient">${cartTotal}</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Subtotal</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>${subtotal.toFixed(2)}</span>
+            </div>
+
+            {/* Shipping */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '4px 0', marginBottom: '12px',
+            }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                Shipping{shipping > 0 ? ' (USPS First Class)' : ''}
+              </span>
+              <span style={{
+                fontSize: '0.9rem',
+                color: shipping === 0 ? 'var(--accent)' : 'var(--text-secondary)',
+                fontWeight: shipping === 0 ? 700 : 400,
+              }}>
+                {shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}
+              </span>
+            </div>
+
+            {/* Total */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              borderTop: '1px solid var(--surface-border)', paddingTop: '16px', marginBottom: '24px'
+            }}>
+              <span style={{ fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Total</span>
+              <span style={{ fontSize: '1.75rem', fontWeight: 800 }} className="text-gradient">${total.toFixed(2)}</span>
             </div>
 
             <button

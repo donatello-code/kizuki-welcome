@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import useStore from './store';
+import AnimationMiddleware from './AnimationMiddleware';
+import { calcSubtotal, calcShipping, calcTotal, getShippingText, getFreeShippingProgress } from './shipping';
 
 /* ─────────────────────────────────────────────
    Shared Styles
@@ -113,6 +115,19 @@ const summaryTotal = {
   fontWeight: 700,
 };
 
+const btnBack = {
+  background: 'var(--surface)',
+  border: '1px solid var(--surface-border)',
+  color: 'var(--text-secondary)',
+  padding: '16px 24px',
+  borderRadius: 'var(--radius-sm)',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  fontSize: '1rem',
+  fontWeight: 600,
+  transition: 'all 0.3s ease',
+};
+
 /* ─────────────────────────────────────────────
    StepProgress Component
    ───────────────────────────────────────────── */
@@ -162,7 +177,7 @@ const StepProgress = ({ steps, currentStep }) => (
    ───────────────────────────────────────────── */
 const USE_PREFILL = false;
 
-const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
+const CreditCardForm = ({ onSubmit, onBack, total, processing }) => {
   const [cardName, setCardName] = useState(USE_PREFILL ? 'John Doe' : '');
   const [cardNumber, setCardNumber] = useState(USE_PREFILL ? '4111 1111 1111 1111' : '');
   const [expiry, setExpiry] = useState(USE_PREFILL ? '12/28' : '');
@@ -280,24 +295,13 @@ const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
       </div>
 
       <div style={{ display: 'flex', gap: '12px' }}>
-        <button type="button" style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--surface-border)',
-          color: 'var(--text-secondary)',
-          padding: '16px 24px',
-          borderRadius: 'var(--radius-sm)',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          fontSize: '1rem',
-          fontWeight: 600,
-          transition: 'all 0.3s ease',
-        }} onClick={onBack}>Back</button>
+        <button type="button" style={btnBack} onClick={onBack}>Back</button>
         <button
           type="submit"
           disabled={processing}
           style={{
             flex: 1,
-            padding: '16px 28px',
+            padding: '14px 28px',
             borderRadius: 'var(--radius-sm)',
             fontWeight: 600,
             cursor: processing ? 'not-allowed' : 'pointer',
@@ -312,7 +316,7 @@ const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
             opacity: processing ? 0.5 : 1,
           }}
         >
-          {processing ? 'Processing...' : `Pay $${cartTotal}`}
+          {processing ? 'Processing...' : `Pay $${total}`}
         </button>
       </div>
     </form>
@@ -334,6 +338,39 @@ const SHIPPING_FIELDS = [
 ];
 
 /* ─────────────────────────────────────────────
+   Order Summary Component (reused across steps)
+   ───────────────────────────────────────────── */
+const OrderSummary = ({ cart, subtotal, shipping, total }) => (
+  <div style={summaryCard}>
+    {cart.map((item) => (
+      <div key={item.id} style={summaryRow}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>&times; {item.quantity}</div>
+        </div>
+        <div style={{ fontWeight: 700, color: 'var(--accent)' }}>
+          ${(item.price * item.quantity).toFixed(2)}
+        </div>
+      </div>
+    ))}
+    <div style={{ padding: '8px 0', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+      <span>Subtotal</span>
+      <span>${subtotal.toFixed(2)}</span>
+    </div>
+    <div style={{ padding: '4px 0 12px', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+      <span>Shipping{shipping > 0 ? ' (USPS First Class)' : ''}</span>
+      <span style={{ color: shipping === 0 ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: shipping === 0 ? 700 : 400 }}>
+        {shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}
+      </span>
+    </div>
+    <div style={summaryTotal}>
+      <span>Total</span>
+      <span className="text-gradient">${total.toFixed(2)}</span>
+    </div>
+  </div>
+);
+
+/* ─────────────────────────────────────────────
    Main CheckoutModal Component
    ───────────────────────────────────────────── */
 const CheckoutModal = ({ onClose }) => {
@@ -348,7 +385,10 @@ const CheckoutModal = ({ onClose }) => {
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [fieldIndex, setFieldIndex] = useState(0);
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = calcSubtotal(cart);
+  const shipping = calcShipping(subtotal);
+  const total = calcTotal(cart);
+  const freeShippingMsg = getFreeShippingProgress(subtotal);
   const currentField = SHIPPING_FIELDS[fieldIndex];
   const isLastField = fieldIndex === SHIPPING_FIELDS.length - 1;
 
@@ -392,7 +432,7 @@ const CheckoutModal = ({ onClose }) => {
             quantity: item.quantity,
             selectedSize: item.selectedSize || null,
           })),
-          total: cartTotal * 100,
+          total: Math.round(total * 100), // Convert to cents
         }),
       });
 
@@ -460,24 +500,24 @@ const CheckoutModal = ({ onClose }) => {
             <h3 style={title}>Complete My Purchase</h3>
             <p style={subtitle}>Enter your payment details to continue</p>
 
-            {/* Order Summary */}
-            <div style={summaryCard}>
-              {cart.map((item) => (
-                <div key={item.id} style={summaryRow}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>&times; {item.quantity}</div>
-                  </div>
-                  <div style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                    ${item.price * item.quantity}
-                  </div>
-                </div>
-              ))}
-              <div style={summaryTotal}>
-                <span>Total</span>
-                <span className="text-gradient">${cartTotal}</span>
+            {/* Order Summary with shipping */}
+            <OrderSummary cart={cart} subtotal={subtotal} shipping={shipping} total={total} />
+
+            {/* Free shipping progress */}
+            {freeShippingMsg && (
+              <div style={{
+                textAlign: 'center',
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)',
+                marginBottom: '12px',
+                padding: '8px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.15)',
+              }}>
+                {freeShippingMsg}
               </div>
-            </div>
+            )}
 
             {/* Payment Methods */}
             <div style={{ marginBottom: '16px' }}>
@@ -533,7 +573,7 @@ const CheckoutModal = ({ onClose }) => {
                     return actions.order.create({
                       purchase_units: [{
                         description: "KIZUKI Store Purchase",
-                        amount: { value: cartTotal.toFixed(2) },
+                        amount: { value: total.toFixed(2) },
                       }],
                     });
                   }}
@@ -591,7 +631,7 @@ const CheckoutModal = ({ onClose }) => {
                   <CreditCardForm
                     onSubmit={handleCardSubmit}
                     onBack={() => setPaymentMethod(null)}
-                    cartTotal={cartTotal}
+                    total={total}
                     processing={cardProcessing}
                   />
                 </div>
@@ -738,23 +778,7 @@ const CheckoutModal = ({ onClose }) => {
             <h3 style={title}>Complete Your Purchase</h3>
             <p style={subtitle}>Review your order and complete payment</p>
 
-            <div style={summaryCard}>
-              {cart.map((item) => (
-                <div key={item.id} style={summaryRow}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>&times; {item.quantity}</div>
-                  </div>
-                  <div style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                    ${item.price * item.quantity}
-                  </div>
-                </div>
-              ))}
-              <div style={summaryTotal}>
-                <span>Total</span>
-                <span className="text-gradient">${cartTotal}</span>
-              </div>
-            </div>
+            <OrderSummary cart={cart} subtotal={subtotal} shipping={shipping} total={total} />
 
             {(paymentMethod === 'paypal' || paymentMethod === 'applepay') && (
               <PayPalScriptProvider
@@ -771,7 +795,7 @@ const CheckoutModal = ({ onClose }) => {
                     return actions.order.create({
                       purchase_units: [{
                         description: "KIZUKI Store Purchase",
-                        amount: { value: cartTotal.toFixed(2) },
+                        amount: { value: total.toFixed(2) },
                       }],
                     });
                   }}
@@ -793,16 +817,7 @@ const CheckoutModal = ({ onClose }) => {
 
             <button
               style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--surface-border)',
-                color: 'var(--text-secondary)',
-                padding: '16px 24px',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                fontSize: '1rem',
-                fontWeight: 600,
-                transition: 'all 0.3s ease',
+                ...btnBack,
                 width: '100%',
                 marginTop: '16px',
                 textAlign: 'center',
