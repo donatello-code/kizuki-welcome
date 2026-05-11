@@ -1,22 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import V2Landing from './V2Landing';
 import V2Store from './V2Store';
+import AdminPage from './AdminPage';
 import CartModal from './CartModal';
 import CheckoutModal from './CheckoutModal';
 import useStore from './store';
 import './index.css';
 
 const V2App = () => {
-  const [currentView, setCurrentView] = useState('store'); // 'landing' | 'store'
+  const [currentView, setCurrentView] = useState('store'); // 'landing' | 'store' | 'admin'
   const [showCartModal, setShowCartModal] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const { cart } = useStore();
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // ─── Hash-based routing for /admin ─────────────────────
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'admin') {
+        setCurrentView('admin');
+      } else if (hash === 'store') {
+        setCurrentView('store');
+      } else if (hash === 'landing') {
+        setCurrentView('landing');
+      }
+    };
+
+    // Check initial hash
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const navigateTo = (view) => {
+    setCurrentView(view);
+    window.location.hash = view;
+  };
+
   const handleOpenCheckout = () => {
     setShowCartModal(false);
     setShowCheckoutModal(true);
   };
+
+  // ─── Admin View (no nav/footer) ────────────────────────
+  if (currentView === 'admin') {
+    return (
+      <AdminPage onBackToStore={() => navigateTo('store')} />
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -38,7 +71,7 @@ const V2App = () => {
       }}>
         <div 
           style={{ fontSize: '1.5rem', fontWeight: 800, cursor: 'pointer', letterSpacing: '2px' }}
-          onClick={() => setCurrentView('store')}
+          onClick={() => navigateTo('store')}
         >
           KIZUKI<span className="text-gradient">.</span>
         </div>
@@ -68,7 +101,7 @@ const V2App = () => {
       {/* Main Content */}
       <main style={{ flex: 1 }}>
         {currentView === 'landing' ? (
-          <V2Landing onShopClick={() => setCurrentView('store')} />
+          <V2Landing onShopClick={() => navigateTo('store')} />
         ) : (
           <V2Store onAddToCart={handleOpenCheckout} />
         )}

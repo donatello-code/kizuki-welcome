@@ -750,6 +750,28 @@ const CheckoutModal = ({ onClose }) => {
                   padding: '20px',
                   marginTop: '12px',
                 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                    <button
+                      onClick={() => setPaymentMethod(null)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'rgba(255,255,255,0.6)',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        fontSize: '0.8rem',
+                        padding: '4px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                      </svg>
+                      Back to payment options
+                    </button>
+                  </div>
                   <CreditCardForm
                     onSubmit={handleCardSubmit}
                     onBack={() => setPaymentMethod(null)}

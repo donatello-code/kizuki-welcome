@@ -211,14 +211,14 @@ if (productCount.count === 0) {
   insert.run(
     'p_1', 'Chessboard', 9900,
     'A canvas for the quiet storm within. This is not merely a board — it is a second skin woven from midnight threads and the ghosts of forgotten games. Each square remembers the clack of ivory, the geometry of sacrifice, the silence between moves. Play on it, and the board follows you into the world. The pieces are already in play.',
-    '/cheeseboard-hoodie.png', 0, 14
+    '/cheeseboard-hoodie.png', 0, 99
   );
   insert.run(
     'p_2', 'Hoodie', 9900,
     'Oversized, loose-fit cut that drapes like a second skin. Crafted from premium extra-thick sheer black fabric — heavy enough to hold its shape, light enough to move with you. The darkness is the point: a void that absorbs light, a silhouette that commands without shouting.',
-    '/hoodie-hero.png', 1, 47
+    '/hoodie-hero.png', 1, 100
   );
-  console.log('✅ Products seeded: p_1=14, p_2=47');
+  console.log('✅ Products seeded: p_1=99, p_2=100');
 }
 
 // ─── GET /api/products ────────────────────────────────────
@@ -402,7 +402,7 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-// ─── Admin: List orders (basic auth optional) ─────────────
+// ─── Admin: List orders ───────────────────────────────────
 app.get('/api/admin/orders', (req, res) => {
   try {
     const orders = db.prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT 50').all();
@@ -410,6 +410,61 @@ app.get('/api/admin/orders', (req, res) => {
   } catch (error) {
     console.error('❌ Admin orders error:', error);
     res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// ─── Admin: Update product quantities (passcode: 9998) ────
+const ADMIN_PASSCODE = '9998';
+
+app.post('/api/admin/update-quantities', (req, res) => {
+  try {
+    const { passcode, quantities } = req.body;
+
+    // Verify passcode
+    if (passcode !== ADMIN_PASSCODE) {
+      return res.status(401).json({ error: 'Invalid passcode' });
+    }
+
+    if (!quantities || typeof quantities !== 'object') {
+      return res.status(400).json({ error: 'Quantities object is required' });
+    }
+
+    const update = db.prepare('UPDATE products SET quantity = ? WHERE id = ?');
+    const results = [];
+
+    for (const [productId, qty] of Object.entries(quantities)) {
+      const numQty = parseInt(qty, 10);
+      if (isNaN(numQty) || numQty < 0) {
+        return res.status(400).json({ error: `Invalid quantity for ${productId}: must be a non-negative number` });
+      }
+      const info = update.run(numQty, productId);
+      if (info.changes > 0) {
+        results.push({ id: productId, quantity: numQty });
+      }
+    }
+
+    console.log('✅ Admin updated quantities:', results);
+    res.json({ success: true, updated: results });
+  } catch (error) {
+    console.error('❌ Admin update quantities error:', error);
+    res.status(500).json({ error: 'Failed to update quantities' });
+  }
+});
+
+// ─── Admin: Get current quantities (passcode: 9998) ──────
+app.post('/api/admin/quantities', (req, res) => {
+  try {
+    const { passcode } = req.body;
+
+    if (passcode !== ADMIN_PASSCODE) {
+      return res.status(401).json({ error: 'Invalid passcode' });
+    }
+
+    const products = db.prepare('SELECT id, name, quantity FROM products ORDER BY id').all();
+    res.json({ products });
+  } catch (error) {
+    console.error('❌ Admin quantities fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch quantities' });
   }
 });
 
