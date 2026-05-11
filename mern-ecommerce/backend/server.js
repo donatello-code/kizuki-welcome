@@ -218,9 +218,9 @@ if (productCount.count === 0) {
   insert.run(
     'p_2', 'Hoodie', 9900,
     'Oversized, loose-fit cut that drapes like a second skin. Crafted from premium extra-thick sheer black fabric — heavy enough to hold its shape, light enough to move with you. The darkness is the point: a void that absorbs light, a silhouette that commands without shouting.',
-    '/hoodie-hero.png', 1, 93
+    '/hoodie-hero.png', 1, 89
   );
-  console.log('✅ Products seeded: p_1=95, p_2=93');
+  console.log('✅ Products seeded: p_1=95, p_2=89');
 }
 
 // ─── Subtract one chessboard from existing DB (migration) ─
