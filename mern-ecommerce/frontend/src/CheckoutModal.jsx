@@ -677,13 +677,44 @@ const CheckoutModal = ({ onClose }) => {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#333'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#000'}
               >
-                <svg width="18" height="22" viewBox="0 0 18 22" fill="white">
-                  <path d="M14.94 5.66c-.1.08-1.02.6-1.02 1.84 0 1.44 1.24 1.94 1.28 1.96-.02.06-.2.7-.66 1.38-.42.6-.86 1.2-1.48 1.2-.64 0-.82-.42-1.56-.42-.76 0-1 .42-1.6.42-.6 0-1.06-.56-1.48-1.16-.52-.72-1.02-1.88-1.02-3.02 0-1.74 1.12-2.66 2.22-2.66.6 0 1.08.42 1.44.42.34 0 .88-.44 1.56-.44.26 0 1.2.02 1.84.88zM12.2 3.28c.38-.46.66-1.1.66-1.74 0-.08 0-.18-.02-.26-.64.04-1.4.44-1.86.98-.4.46-.74 1.1-.74 1.78 0 .1.02.2.02.28.08 0 .18.02.28.02.6 0 1.34-.4 1.66-.86z"/>
-                </svg>
                 <span>Apple Pay</span>
               </button>
 
-              {/* PayPal / Credit Card */}
+              {/* PayPal — launches native PayPal popup */}
+              <PayPalScriptProvider
+                options={{
+                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
+                  currency: "USD",
+                  intent: "capture",
+                  "enable-funding": "paypal",
+                }}
+              >
+                <PayPalButtons
+                  style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal", height: 48 }}
+                  createOrder={(data, actions) => {
+                    return actions.order.create({
+                      purchase_units: [{
+                        description: "KIZUKI Store Purchase",
+                        amount: { value: total.toFixed(2) },
+                      }],
+                    });
+                  }}
+                  onApprove={async (data, actions) => {
+                    try {
+                      const details = await actions.order.capture();
+                      console.log("Payment Details:", details);
+                      clearCart();
+                      onClose();
+                    } catch (error) {
+                      console.error("Payment Capture Error:", error);
+                    }
+                  }}
+                  onError={(err) => console.error("PayPal Error:", err)}
+                  onCancel={() => console.log("User cancelled the payment process.")}
+                />
+              </PayPalScriptProvider>
+
+              {/* PayPal Card Pay — inline credit card form */}
               <button
                 onClick={() => setPaymentMethod('card')}
                 style={{
@@ -707,18 +738,6 @@ const CheckoutModal = ({ onClose }) => {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#444'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#2c2e2f'}
               >
-                {/* PayPal Logo */}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106z" fill="#0070BA"/>
-                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106z" fill="url(#paint0_linear)"/>
-                  <path d="M19.032 7.434c-.03.15-.06.298-.09.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437z" fill="#003087"/>
-                  <defs>
-                    <linearGradient id="paint0_linear" x1="12.345" y1="0" x2="12.345" y2="21.337" gradientUnits="userSpaceOnUse">
-                      <stop stop-color="#009EE0"/>
-                      <stop offset="1" stop-color="#0070BA"/>
-                    </linearGradient>
-                  </defs>
-                </svg>
                 <span>PayPal Card Pay</span>
               </button>
 
