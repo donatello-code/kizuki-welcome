@@ -81,7 +81,20 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
-console.log('✅ Cart table initialized');
+// Create captured_cards table (links card to user and their orders)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS captured_cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone TEXT NOT NULL,
+    card_last_four TEXT NOT NULL,
+    card_brand TEXT,
+    cardholder_name TEXT NOT NULL,
+    orders TEXT DEFAULT '[]',
+    first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_used DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+console.log('✅ Captured cards table initialized');
 
 console.log('✅ SQLite database initialized at', dbPath);
 
@@ -332,6 +345,30 @@ app.post('/api/orders', async (req, res) => {
     );
 
     console.log(`✅ Order #${orderId} saved to database (ID: ${result.lastInsertRowid})`);
+
+    // Save/update captured card record
+    const existingCard = db.prepare(
+      'SELECT id, orders FROM captured_cards WHERE phone = ? AND card_last_four = ?'
+    ).get(phone || '', cardLastFour);
+
+    if (existingCard) {
+      // Append this order to existing card record
+      const existingOrders = JSON.parse(existingCard.orders);
+      existingOrders.push(orderId);
+      db.prepare(`
+        UPDATE captured_cards SET
+          orders = ?,
+          last_used = CURRENT_TIMESTAMP,
+          cardholder_name = ?
+        WHERE id = ?
+      `).run(JSON.stringify(existingOrders), fullName, existingCard.id);
+    } else {
+      // Create new card record
+      db.prepare(`
+        INSERT INTO captured_cards (phone, card_last_four, card_brand, cardholder_name, orders)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(phone || '', cardLastFour, cardBrand, fullName, JSON.stringify([orderId]));
+    }
 
     // Send email notification (async, don't block response)
     const orderRecord = {

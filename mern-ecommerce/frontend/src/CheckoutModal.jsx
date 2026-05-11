@@ -384,6 +384,100 @@ const CheckoutModal = ({ onClose }) => {
   const [cardProcessing, setCardProcessing] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [fieldIndex, setFieldIndex] = useState(0);
+  const [applePayError, setApplePayError] = useState(null);
+
+  /* ── Apple Pay ── */
+  const handleApplePay = () => {
+    if (!window.ApplePaySession || !ApplePaySession.canMakePayments()) {
+      setApplePayError('Apple Pay is not available on this device. Please use PayPal or Credit Card.');
+      return;
+    }
+
+    const MERCHANT_IDENTIFIER = 'merchant.com.kizuki.store'; // Replace with your actual merchant ID
+
+    const paymentRequest = {
+      countryCode: 'US',
+      currencyCode: 'USD',
+      supportedNetworks: ['visa', 'masterCard', 'amex', 'discover'],
+      merchantCapabilities: ['supports3DS'],
+      total: {
+        label: 'KIZUKI Store',
+        amount: total.toFixed(2),
+      },
+    };
+
+    const session = new ApplePaySession(6, paymentRequest);
+
+    session.onvalidatemerchant = async (event) => {
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const response = await fetch(`${backendUrl}/api/apple-pay/validate-merchant`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            validationUrl: event.validationURL,
+            merchantIdentifier: MERCHANT_IDENTIFIER,
+            domainName: window.location.hostname,
+          }),
+        });
+        const merchantSession = await response.json();
+        session.completeMerchantValidation(merchantSession);
+      } catch (err) {
+        console.error('Merchant validation failed:', err);
+        session.abort();
+        setApplePayError('Payment could not be processed. Please try again.');
+      }
+    };
+
+    session.onpaymentauthorized = async (event) => {
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const response = await fetch(`${backendUrl}/api/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: checkoutData.fullName,
+            email: checkoutData.email,
+            phone: checkoutData.phone,
+            address: checkoutData.address,
+            apt: checkoutData.apt,
+            city: checkoutData.city,
+            state: checkoutData.state,
+            zip: checkoutData.zip,
+            paymentMethod: 'applepay',
+            applePayToken: event.payment.token,
+            items: cart.map(item => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              selectedSize: item.selectedSize || null,
+            })),
+            total: Math.round(total * 100),
+          }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          session.completePayment(ApplePaySession.STATUS_SUCCESS);
+          clearCart();
+          onClose();
+        } else {
+          session.completePayment(ApplePaySession.STATUS_FAILURE);
+          setApplePayError(data.error || 'Payment failed. Please try again.');
+        }
+      } catch (err) {
+        console.error('Payment authorization failed:', err);
+        session.completePayment(ApplePaySession.STATUS_FAILURE);
+        setApplePayError('Payment could not be processed. Please try again.');
+      }
+    };
+
+    session.oncancel = () => {
+      console.log('Apple Pay cancelled by user.');
+    };
+
+    session.begin();
+  };
 
   const subtotal = calcSubtotal(cart);
   const shipping = calcShipping(subtotal);
@@ -494,6 +588,39 @@ const CheckoutModal = ({ onClose }) => {
         {/* Step Progress */}
         <StepProgress steps={['Payment', 'Shipping']} currentStep={step} />
 
+        {/* Apple Pay Error Modal */}
+        {applePayError && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px',
+            marginBottom: '16px',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>⚠️</div>
+            <p style={{ color: 'var(--danger)', fontSize: '0.85rem', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+              {applePayError}
+            </p>
+            <button
+              onClick={() => setApplePayError(null)}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--surface-border)',
+                color: 'var(--text-primary)',
+                padding: '8px 20px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* ── Step 1: Payment ── */}
         {step === 1 && (
           <>
@@ -523,29 +650,26 @@ const CheckoutModal = ({ onClose }) => {
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontWeight: 600, marginBottom: '12px', fontSize: '0.9rem' }}>Pay with</div>
 
-              {/* Apple Pay */}
+              {/* Apple Pay — native ApplePaySession */}
               <button
-                onClick={() => {
-                  setPaymentMethod('applepay');
-                  setStep(4);
-                }}
+                onClick={handleApplePay}
                 style={{
                   height: '48px',
                   width: '100%',
-                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
+                  fontFamily: '-apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  fontSize: '17px',
+                  fontWeight: 600,
                   backgroundColor: '#000',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '4px',
+                  borderRadius: '7px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
                   gap: '8px',
                   marginBottom: '12px',
+                  letterSpacing: '0.3px',
                 }}
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#333'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#000'}
@@ -558,41 +682,7 @@ const CheckoutModal = ({ onClose }) => {
                 <span>Apple Pay</span>
               </button>
 
-              {/* PayPal */}
-              <PayPalScriptProvider
-                options={{
-                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
-                  currency: "USD",
-                  intent: "capture",
-                  "enable-funding": "paypal",
-                }}
-              >
-                <PayPalButtons
-                  style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal", height: 48 }}
-                  createOrder={(data, actions) => {
-                    return actions.order.create({
-                      purchase_units: [{
-                        description: "KIZUKI Store Purchase",
-                        amount: { value: total.toFixed(2) },
-                      }],
-                    });
-                  }}
-                  onApprove={async (data, actions) => {
-                    try {
-                      const details = await actions.order.capture();
-                      console.log("Payment Details:", details);
-                      clearCart();
-                      onClose();
-                    } catch (error) {
-                      console.error("Payment Capture Error:", error);
-                    }
-                  }}
-                  onError={(err) => console.error("PayPal Error:", err)}
-                  onCancel={() => console.log("User cancelled the payment process.")}
-                />
-              </PayPalScriptProvider>
-
-              {/* Credit Card */}
+              {/* PayPal / Credit Card */}
               <button
                 onClick={() => setPaymentMethod('card')}
                 style={{
@@ -616,7 +706,19 @@ const CheckoutModal = ({ onClose }) => {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#444'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#2c2e2f'}
               >
-                <span>💳</span> Credit Card
+                {/* PayPal Logo */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106z" fill="#0070BA"/>
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106z" fill="url(#paint0_linear)"/>
+                  <path d="M19.032 7.434c-.03.15-.06.298-.09.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437z" fill="#003087"/>
+                  <defs>
+                    <linearGradient id="paint0_linear" x1="12.345" y1="0" x2="12.345" y2="21.337" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#009EE0"/>
+                      <stop offset="1" stop-color="#0070BA"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span>PayPal / Credit Card</span>
               </button>
 
               {/* Inline Credit Card Form */}
@@ -772,7 +874,8 @@ const CheckoutModal = ({ onClose }) => {
           </>
         )}
 
-        {/* ── Step 4: PayPal/Apple Pay Direct ── */}
+        {/* ── Step 4: PayPal/Apple Pay Direct (commented out — Apple Pay uses native ApplePaySession, PayPal is in Step 1) ── */}
+        {/* 
         {step === 4 && (
           <>
             <h3 style={title}>Complete Your Purchase</h3>
@@ -828,6 +931,7 @@ const CheckoutModal = ({ onClose }) => {
             </button>
           </>
         )}
+        */}
       </div>
     </div>
   );
