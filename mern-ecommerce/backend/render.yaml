@@ -26,7 +26,7 @@ services:
       - key: EMAIL_TO
         sync: false
       - key: CORS_ORIGIN
-        value: https://kizuki-frontend.onrender.com
+        value: https://kizuki.vip
     disk:
       name: kizuki-data
       mountPath: /opt/render/project/src/data

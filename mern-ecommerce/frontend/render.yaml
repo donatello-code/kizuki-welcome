@@ -8,7 +8,7 @@ services:
     rootDir: mern-ecommerce/frontend
     envVars:
       - key: VITE_BACKEND_URL
-        value: https://kizuki-backend.onrender.com
+        value: https://api.kizuki.vip
       - key: VITE_STRIPE_PUBLISHABLE_KEY
         sync: false
       - key: VITE_PAYPAL_CLIENT_ID
