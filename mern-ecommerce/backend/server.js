@@ -212,17 +212,27 @@ if (productCount.count === 0) {
   insert.run(
     'p_1', 'Chessboard', 9900,
     'A canvas for the quiet storm within. This is not merely a board — it is a second skin woven from midnight threads and the ghosts of forgotten games. Each square remembers the clack of ivory, the geometry of sacrifice, the silence between moves. Play on it, and the board follows you into the world. The pieces are already in play.',
-    '/cheeseboard-hoodie.png', 0, 96
+    '/cheeseboard-hoodie.png', 0, 95
   );
+
   insert.run(
     'p_2', 'Hoodie', 9900,
     'Oversized, loose-fit cut that drapes like a second skin. Crafted from premium extra-thick sheer black fabric — heavy enough to hold its shape, light enough to move with you. The darkness is the point: a void that absorbs light, a silhouette that commands without shouting.',
     '/hoodie-hero.png', 1, 93
   );
-  console.log('✅ Products seeded: p_1=96, p_2=93');
+  console.log('✅ Products seeded: p_1=95, p_2=93');
+}
+
+// ─── Subtract one chessboard from existing DB (migration) ─
+// If p_1 is still 96 from the original seed, decrement to 95
+const p1 = db.prepare("SELECT quantity FROM products WHERE id = 'p_1'").get();
+if (p1 && p1.quantity === 96) {
+  db.prepare("UPDATE products SET quantity = 95 WHERE id = 'p_1'").run();
+  console.log('📉 Chessboard quantity adjusted: 96 → 95');
 }
 
 // ─── GET /api/products ────────────────────────────────────
+
 app.get('/api/products', (req, res) => {
   try {
     const products = db.prepare('SELECT * FROM products ORDER BY id').all();
