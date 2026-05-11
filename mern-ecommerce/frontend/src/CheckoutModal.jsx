@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import useStore from './store';
-import AnimationMiddleware from './AnimationMiddleware';
 
 /* ─────────────────────────────────────────────
    Shared Styles
@@ -114,19 +113,6 @@ const summaryTotal = {
   fontWeight: 700,
 };
 
-const btnBack = {
-  background: 'var(--surface)',
-  border: '1px solid var(--surface-border)',
-  color: 'var(--text-secondary)',
-  padding: '16px 24px',
-  borderRadius: 'var(--radius-sm)',
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  fontSize: '1rem',
-  fontWeight: 600,
-  transition: 'all 0.3s ease',
-};
-
 /* ─────────────────────────────────────────────
    StepProgress Component
    ───────────────────────────────────────────── */
@@ -157,14 +143,6 @@ const StepProgress = ({ steps, currentStep }) => (
           }}>
             {isDone ? '✓' : i + 1}
           </div>
-          <span style={{
-            fontSize: '0.75rem',
-            fontWeight: isActive ? 700 : 500,
-            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-            display: 'none',
-          }}>
-            {label}
-          </span>
           {i < steps.length - 1 && (
             <div style={{
               width: '24px',
@@ -302,13 +280,24 @@ const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
       </div>
 
       <div style={{ display: 'flex', gap: '12px' }}>
-        <button type="button" style={btnBack} onClick={onBack}>Back</button>
+        <button type="button" style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--surface-border)',
+          color: 'var(--text-secondary)',
+          padding: '16px 24px',
+          borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          fontSize: '1rem',
+          fontWeight: 600,
+          transition: 'all 0.3s ease',
+        }} onClick={onBack}>Back</button>
         <button
           type="submit"
           disabled={processing}
           style={{
             flex: 1,
-            padding: '14px 28px',
+            padding: '16px 28px',
             borderRadius: 'var(--radius-sm)',
             fontWeight: 600,
             cursor: processing ? 'not-allowed' : 'pointer',
@@ -331,6 +320,20 @@ const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
 };
 
 /* ─────────────────────────────────────────────
+   Shipping Fields Configuration
+   ───────────────────────────────────────────── */
+const SHIPPING_FIELDS = [
+  { key: 'fullName', label: 'Full Name', placeholder: 'John Doe', type: 'text' },
+  { key: 'email', label: 'Email', placeholder: 'john@example.com', type: 'email' },
+  { key: 'phone', label: 'Phone', placeholder: '+1 (555) 123-4567', type: 'tel' },
+  { key: 'address', label: 'Street Address', placeholder: '123 Main Street', type: 'text' },
+  { key: 'apt', label: 'Apt / Suite (optional)', placeholder: 'Apt 4B', type: 'text' },
+  { key: 'city', label: 'City', placeholder: 'New York', type: 'text' },
+  { key: 'state', label: 'State', placeholder: 'NY', type: 'text' },
+  { key: 'zip', label: 'ZIP Code', placeholder: '10001', type: 'text' },
+];
+
+/* ─────────────────────────────────────────────
    Main CheckoutModal Component
    ───────────────────────────────────────────── */
 const CheckoutModal = ({ onClose }) => {
@@ -342,47 +345,24 @@ const CheckoutModal = ({ onClose }) => {
   const [touched, setTouched] = useState({});
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [cardProcessing, setCardProcessing] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [editingItemId, setEditingItemId] = useState(null);
   const [paymentVerified, setPaymentVerified] = useState(false);
+  const [fieldIndex, setFieldIndex] = useState(0);
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const currentField = SHIPPING_FIELDS[fieldIndex];
+  const isLastField = fieldIndex === SHIPPING_FIELDS.length - 1;
 
   /* ── Validation ── */
-  const validateStep = (currentStep, data) => {
-    const errs = {};
-    if (currentStep === 1) {
-      // Payment step — no shipping validation needed here
-    } else if (currentStep === 2) {
-      if (!data.fullName || data.fullName.trim().length < 2) errs.fullName = 'Full name is required (min 2 characters)';
-      if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errs.email = 'Enter a valid email address';
-      if (!data.phone || data.phone.replace(/\D/g, '').length < 10) errs.phone = 'Enter a valid phone number (min 10 digits)';
-    } else if (currentStep === 3) {
-      if (!data.address || data.address.trim().length < 5) errs.address = 'Street address is required (min 5 characters)';
-      if (!data.city || data.city.trim().length < 1) errs.city = 'City is required';
-      if (!data.state || data.state.trim().length < 2) errs.state = 'State is required';
-      if (!data.zip || data.zip.replace(/\D/g, '').length < 5) errs.zip = 'ZIP code is required (min 5 digits)';
-    }
-    return errs;
+  const validateField = (key, value) => {
+    if (key === 'fullName' && (!value || value.trim().length < 2)) return 'Full name is required (min 2 characters)';
+    if (key === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address';
+    if (key === 'phone' && value.replace(/\D/g, '').length < 10) return 'Enter a valid phone number (min 10 digits)';
+    if (key === 'address' && (!value || value.trim().length < 5)) return 'Street address is required (min 5 characters)';
+    if (key === 'city' && (!value || value.trim().length < 1)) return 'City is required';
+    if (key === 'state' && (!value || value.trim().length < 2)) return 'State is required';
+    if (key === 'zip' && value.replace(/\D/g, '').length < 5) return 'ZIP code is required (min 5 digits)';
+    return null;
   };
-
-  /* ── Navigation ── */
-  const handleNext = useCallback((nextStep) => {
-    const stepErrors = validateStep(step, checkoutData);
-    setErrors((prev) => ({ ...prev, ...stepErrors }));
-    const fields = step === 2 ? ['fullName', 'email', 'phone'] : step === 3 ? ['address', 'city', 'state', 'zip'] : [];
-    const newTouched = {};
-    fields.forEach((f) => { newTouched[f] = true; });
-    setTouched((prev) => ({ ...prev, ...newTouched }));
-
-    if (Object.keys(stepErrors).length === 0) {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setStep(nextStep);
-        setIsTransitioning(false);
-      }, 200);
-    }
-  }, [step, checkoutData]);
 
   const handleCardSubmit = async (cardData) => {
     setCardProcessing(true);
@@ -412,7 +392,7 @@ const CheckoutModal = ({ onClose }) => {
             quantity: item.quantity,
             selectedSize: item.selectedSize || null,
           })),
-          total: cartTotal * 100, // Convert to cents
+          total: cartTotal * 100,
         }),
       });
 
@@ -433,11 +413,35 @@ const CheckoutModal = ({ onClose }) => {
     }
   };
 
-  const handleFieldChange = (field, value) => {
-    setCheckoutData({ ...checkoutData, [field]: value });
-    if (touched[field]) {
-      const stepErrors = validateStep(step, { ...checkoutData, [field]: value });
-      setErrors((prev) => ({ ...prev, [field]: stepErrors[field] }));
+  const handleFieldChange = (key, value) => {
+    setCheckoutData({ ...checkoutData, [key]: value });
+    if (touched[key]) {
+      const err = validateField(key, value);
+      setErrors((prev) => ({ ...prev, [key]: err }));
+    }
+  };
+
+  const handleFieldNext = () => {
+    const err = validateField(currentField.key, checkoutData[currentField.key]);
+    setErrors((prev) => ({ ...prev, [currentField.key]: err }));
+    setTouched((prev) => ({ ...prev, [currentField.key]: true }));
+
+    if (err) return;
+
+    if (isLastField) {
+      // Submit order
+      alert('Order submitted! Thank you for your purchase.');
+      clearCart();
+      onClose();
+    } else {
+      setFieldIndex(fieldIndex + 1);
+    }
+  };
+
+  const handleFieldKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleFieldNext();
     }
   };
 
@@ -448,9 +452,9 @@ const CheckoutModal = ({ onClose }) => {
         <button style={closeBtn} onClick={onClose}>×</button>
 
         {/* Step Progress */}
-        <StepProgress steps={['Payment', 'Contact', 'Shipping']} currentStep={step} />
+        <StepProgress steps={['Payment', 'Shipping']} currentStep={step} />
 
-        {/* ── Step 1: Payment (first screen) ── */}
+        {/* ── Step 1: Payment ── */}
         {step === 1 && (
           <>
             <h3 style={title}>Complete My Purchase</h3>
@@ -524,13 +528,7 @@ const CheckoutModal = ({ onClose }) => {
                 }}
               >
                 <PayPalButtons
-                  style={{
-                    layout: "vertical",
-                    color: "gold",
-                    shape: "rect",
-                    label: "paypal",
-                    height: 48,
-                  }}
+                  style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal", height: 48 }}
                   createOrder={(data, actions) => {
                     return actions.order.create({
                       purchase_units: [{
@@ -543,16 +541,6 @@ const CheckoutModal = ({ onClose }) => {
                     try {
                       const details = await actions.order.capture();
                       console.log("Payment Details:", details);
-                      const orderData = {
-                        ...checkoutData,
-                        items: cart,
-                        total: cartTotal,
-                        paypalOrderId: data.orderID,
-                        payer: details.payer,
-                        paymentMethod: 'paypal',
-                        timestamp: new Date().toISOString(),
-                      };
-                      console.log('Order submitted:', orderData);
                       clearCart();
                       onClose();
                     } catch (error) {
@@ -626,214 +614,120 @@ const CheckoutModal = ({ onClose }) => {
           </>
         )}
 
-        {/* ── Step 2: Contact Info ── */}
+        {/* ── Step 2: Shipping (one field at a time) ── */}
         {step === 2 && (
           <>
-            <h3 style={title}>Who Are You?</h3>
-            <p style={subtitle}>We need to know where to send your order</p>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Full Name</label>
-              <input
-                style={{
-                  ...inputStyle,
-                  borderColor: errors.fullName ? 'var(--danger)' : focusedField === 'fullName' ? 'var(--accent)' : 'var(--surface-border)',
-                  boxShadow: errors.fullName ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : focusedField === 'fullName' ? '0 0 0 3px rgba(99, 102, 241, 0.2)' : 'none',
-                }}
-                placeholder="John Doe"
-                value={checkoutData.fullName}
-                onChange={(e) => handleFieldChange('fullName', e.target.value)}
-                onFocus={() => setFocusedField('fullName')}
-                onBlur={() => setFocusedField(null)}
-              />
-              {errors.fullName && <div style={errorText}>{errors.fullName}</div>}
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Email</label>
-              <input
-                style={{
-                  ...inputStyle,
-                  borderColor: errors.email ? 'var(--danger)' : focusedField === 'email' ? 'var(--accent)' : 'var(--surface-border)',
-                  boxShadow: errors.email ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : focusedField === 'email' ? '0 0 0 3px rgba(99, 102, 241, 0.2)' : 'none',
-                }}
-                placeholder="john@example.com"
-                value={checkoutData.email}
-                onChange={(e) => handleFieldChange('email', e.target.value)}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
-              />
-              {errors.email && <div style={errorText}>{errors.email}</div>}
-            </div>
-
-            <div style={{ marginBottom: '24px' }}>
-              <label style={labelStyle}>Phone</label>
-              <input
-                style={{
-                  ...inputStyle,
-                  borderColor: errors.phone ? 'var(--danger)' : focusedField === 'phone' ? 'var(--accent)' : 'var(--surface-border)',
-                  boxShadow: errors.phone ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : focusedField === 'phone' ? '0 0 0 3px rgba(99, 102, 241, 0.2)' : 'none',
-                }}
-                placeholder="+1 (555) 123-4567"
-                value={checkoutData.phone}
-                onChange={(e) => handleFieldChange('phone', e.target.value)}
-                onFocus={() => setFocusedField('phone')}
-                onBlur={() => setFocusedField(null)}
-              />
-              {errors.phone && <div style={errorText}>{errors.phone}</div>}
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button style={btnBack} onClick={() => setStep(1)}>Back</button>
+            {/* Back button — small, near step progress */}
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
               <button
-                onClick={() => handleNext(3)}
-                disabled={isTransitioning}
+                onClick={() => setStep(1)}
                 style={{
-                  flex: 1,
-                  padding: '16px',
-                  borderRadius: 'var(--radius-sm)',
-                  fontWeight: 600,
-                  cursor: isTransitioning ? 'not-allowed' : 'pointer',
+                  background: 'none',
                   border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
                   fontFamily: 'inherit',
-                  fontSize: '1rem',
-                  background: isTransitioning
-                    ? 'var(--surface)'
-                    : 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
-                  color: 'white',
-                  transition: 'all 0.3s ease',
-                  opacity: isTransitioning ? 0.5 : 1,
+                  fontSize: '0.8rem',
+                  padding: '4px 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}
               >
-                Continue to Shipping
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back
               </button>
             </div>
-          </>
-        )}
 
-        {/* ── Step 3: Shipping Address ── */}
-        {step === 3 && (
-          <>
             <h3 style={title}>Where To?</h3>
             <p style={subtitle}>Enter your shipping address</p>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Street Address</label>
-              <input
-                style={{
-                  ...inputStyle,
-                  borderColor: errors.address ? 'var(--danger)' : focusedField === 'address' ? 'var(--accent)' : 'var(--surface-border)',
-                  boxShadow: errors.address ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : focusedField === 'address' ? '0 0 0 3px rgba(99, 102, 241, 0.2)' : 'none',
-                }}
-                placeholder="123 Main Street"
-                value={checkoutData.address}
-                onChange={(e) => handleFieldChange('address', e.target.value)}
-                onFocus={() => setFocusedField('address')}
-                onBlur={() => setFocusedField(null)}
-              />
-              {errors.address && <div style={errorText}>{errors.address}</div>}
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Apt / Suite (optional)</label>
-              <input
-                style={inputStyle}
-                placeholder="Apt 4B"
-                value={checkoutData.apt}
-                onChange={(e) => handleFieldChange('apt', e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>City</label>
-                <input
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.city ? 'var(--danger)' : focusedField === 'city' ? 'var(--accent)' : 'var(--surface-border)',
-                    boxShadow: errors.city ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : focusedField === 'city' ? '0 0 0 3px rgba(99, 102, 241, 0.2)' : 'none',
-                  }}
-                  placeholder="New York"
-                  value={checkoutData.city}
-                  onChange={(e) => handleFieldChange('city', e.target.value)}
-                  onFocus={() => setFocusedField('city')}
-                  onBlur={() => setFocusedField(null)}
-                />
-                {errors.city && <div style={errorText}>{errors.city}</div>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>State</label>
-                <input
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.state ? 'var(--danger)' : focusedField === 'state' ? 'var(--accent)' : 'var(--surface-border)',
-                    boxShadow: errors.state ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : focusedField === 'state' ? '0 0 0 3px rgba(99, 102, 241, 0.2)' : 'none',
-                  }}
-                  placeholder="NY"
-                  value={checkoutData.state}
-                  onChange={(e) => handleFieldChange('state', e.target.value)}
-                  onFocus={() => setFocusedField('state')}
-                  onBlur={() => setFocusedField(null)}
-                />
-                {errors.state && <div style={errorText}>{errors.state}</div>}
+            {/* Shipping Label Preview — maroon cardboard with white label */}
+            <div style={{
+              background: '#800000',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px',
+              marginBottom: '24px',
+            }}>
+              <div style={{
+                background: 'white',
+                borderRadius: '4px',
+                padding: '16px',
+                color: '#1a1a1a',
+                fontFamily: 'monospace',
+                fontSize: '0.85rem',
+                lineHeight: 1.8,
+                minHeight: '80px',
+              }}>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>
+                  {checkoutData.fullName || 'FULL NAME'}
+                </div>
+                <div>
+                  {checkoutData.address || 'STREET ADDRESS'}
+                  {checkoutData.apt ? `, ${checkoutData.apt}` : ''}
+                </div>
+                <div>
+                  {checkoutData.city || 'CITY'}{checkoutData.city && checkoutData.state ? ', ' : ''}
+                  {checkoutData.state || 'STATE'} {checkoutData.zip || 'ZIP'}
+                </div>
               </div>
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-              <label style={labelStyle}>ZIP Code</label>
-              <input
-                style={{
-                  ...inputStyle,
-                  borderColor: errors.zip ? 'var(--danger)' : focusedField === 'zip' ? 'var(--accent)' : 'var(--surface-border)',
-                  boxShadow: errors.zip ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : focusedField === 'zip' ? '0 0 0 3px rgba(99, 102, 241, 0.2)' : 'none',
-                }}
-                placeholder="10001"
-                value={checkoutData.zip}
-                onChange={(e) => handleFieldChange('zip', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                onFocus={() => setFocusedField('zip')}
-                onBlur={() => setFocusedField(null)}
-              />
-              {errors.zip && <div style={errorText}>{errors.zip}</div>}
+            {/* Field Progress */}
+            <div style={{
+              textAlign: 'center',
+              color: 'var(--text-secondary)',
+              fontSize: '0.75rem',
+              marginBottom: '16px',
+            }}>
+              {fieldIndex + 1} of {SHIPPING_FIELDS.length}
             </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button style={btnBack} onClick={() => setStep(2)}>Back</button>
-              <button
-                onClick={() => {
-                  // Final submit — all info collected
-                  const stepErrors = validateStep(3, checkoutData);
-                  setErrors((prev) => ({ ...prev, ...stepErrors }));
-                  const fields = ['address', 'city', 'state', 'zip'];
-                  const newTouched = {};
-                  fields.forEach((f) => { newTouched[f] = true; });
-                  setTouched((prev) => ({ ...prev, ...newTouched }));
-                  if (Object.keys(stepErrors).length === 0) {
-                    // Submit order with all collected data
-                    alert('Order submitted! Thank you for your purchase.');
-                    clearCart();
-                    onClose();
-                  }
-                }}
-                disabled={isTransitioning}
-                style={{
-                  flex: 1,
-                  padding: '16px',
-                  borderRadius: 'var(--radius-sm)',
-                  fontWeight: 600,
-                  cursor: isTransitioning ? 'not-allowed' : 'pointer',
-                  border: 'none',
-                  fontFamily: 'inherit',
-                  fontSize: '1rem',
-                  background: isTransitioning
-                    ? 'var(--surface)'
-                    : 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
-                  color: 'white',
-                  transition: 'all 0.3s ease',
-                  opacity: isTransitioning ? 0.5 : 1,
-                }}
-              >
-                Place Order — ${cartTotal}
-              </button>
+            {/* Current Field */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={labelStyle}>{currentField.label}</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  style={{
+                    flex: 1,
+                    ...inputStyle,
+                    borderColor: errors[currentField.key] ? 'var(--danger)' : focusedField === currentField.key ? 'var(--accent)' : 'var(--surface-border)',
+                    boxShadow: errors[currentField.key] ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : focusedField === currentField.key ? '0 0 0 3px rgba(99, 102, 241, 0.2)' : 'none',
+                  }}
+                  placeholder={currentField.placeholder}
+                  value={checkoutData[currentField.key]}
+                  onChange={(e) => handleFieldChange(currentField.key, e.target.value)}
+                  onFocus={() => setFocusedField(currentField.key)}
+                  onBlur={() => setFocusedField(null)}
+                  onKeyDown={handleFieldKeyDown}
+                  type={currentField.type}
+                  autoFocus
+                />
+                <button
+                  onClick={handleFieldNext}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
+                    border: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
+              {errors[currentField.key] && <div style={errorText}>{errors[currentField.key]}</div>}
             </div>
           </>
         )}
@@ -885,16 +779,6 @@ const CheckoutModal = ({ onClose }) => {
                     try {
                       const details = await actions.order.capture();
                       console.log("Payment Details:", details);
-                      const orderData = {
-                        ...checkoutData,
-                        items: cart,
-                        total: cartTotal,
-                        paypalOrderId: data.orderID,
-                        payer: details.payer,
-                        paymentMethod: 'paypal',
-                        timestamp: new Date().toISOString(),
-                      };
-                      console.log('Order submitted:', orderData);
                       clearCart();
                       onClose();
                     } catch (error) {
@@ -909,7 +793,16 @@ const CheckoutModal = ({ onClose }) => {
 
             <button
               style={{
-                ...btnBack,
+                background: 'var(--surface)',
+                border: '1px solid var(--surface-border)',
+                color: 'var(--text-secondary)',
+                padding: '16px 24px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                fontSize: '1rem',
+                fontWeight: 600,
+                transition: 'all 0.3s ease',
                 width: '100%',
                 marginTop: '16px',
                 textAlign: 'center',

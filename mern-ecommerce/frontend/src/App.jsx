@@ -167,7 +167,8 @@ function App() {
           </>
         )}
 
-        {/* Checkout Section */}
+        {/* Checkout Section — commented out (duplicate "Complete Your Purchase" screen) */}
+        {/*
         <div style={{ ...sharedStyles.card, marginTop: spacing.xxxl }}>
           <h2 style={{ ...sharedStyles.sectionTitle, marginTop: 0 }}>Checkout</h2>
           <input
@@ -194,6 +195,7 @@ function App() {
             <Checkout />
           )}
         </div>
+        */}
       </main>
     </div>
   );
