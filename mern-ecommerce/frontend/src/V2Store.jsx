@@ -73,7 +73,7 @@ const V2Store = ({ onAddToCart }) => {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 20px 60px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 16px 60px' }}>
       <AnimationMiddleware animation="anim-fade-in-up">
         <div style={{ textAlign: 'center', marginBottom: '60px' }}>
           <span style={{
@@ -102,8 +102,8 @@ const V2Store = ({ onAddToCart }) => {
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
-        gap: '40px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(400px, 100%), 1fr))', 
+        gap: 'clamp(24px, 4vw, 40px)',
         alignItems: 'stretch',
       }}>
         {products.map((product, index) => (
@@ -137,7 +137,7 @@ const V2Store = ({ onAddToCart }) => {
 
               {/* Image */}
               <div style={{ 
-                height: '380px', 
+                height: 'clamp(240px, 40vw, 380px)', 
                 overflow: 'hidden', 
                 position: 'relative',
                 background: 'linear-gradient(180deg, rgba(10,10,12,0) 0%, rgba(10,10,12,0.8) 100%)',
@@ -166,7 +166,7 @@ const V2Store = ({ onAddToCart }) => {
 
               {/* Content */}
               <div style={{ 
-                padding: '32px', 
+                padding: 'clamp(20px, 3vw, 32px)', 
                 display: 'flex', 
                 flexDirection: 'column', 
                 flex: 1,
@@ -246,7 +246,7 @@ const V2Store = ({ onAddToCart }) => {
         <div style={{
           textAlign: 'center',
           marginTop: '80px',
-          padding: '48px',
+          padding: 'clamp(24px, 5vw, 48px)',
           borderRadius: 'var(--radius-lg)',
           background: 'var(--surface)',
           border: '1px solid var(--surface-border)',

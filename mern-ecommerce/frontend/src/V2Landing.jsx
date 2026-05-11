@@ -3,7 +3,7 @@ import AnimationMiddleware from './AnimationMiddleware';
 
 const V2Landing = ({ onShopClick }) => {
   return (
-    <div style={{ padding: '120px 20px 60px', minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ padding: '120px 16px 60px', minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
       <AnimationMiddleware className="text-center" animation="anim-fade-in-up" style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <span style={{
           display: 'inline-block',
@@ -43,7 +43,7 @@ const V2Landing = ({ onShopClick }) => {
       <div style={{ height: '40px' }} />
 
       <AnimationMiddleware delay="delay-400" style={{ marginTop: '100px', width: '100%', maxWidth: '900px', position: 'relative', zIndex: 1 }}>
-        <div className="glass hover-glow" style={{ borderRadius: 'var(--radius-lg)', padding: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '40px' }}>
+        <div className="glass hover-glow" style={{ borderRadius: 'var(--radius-lg)', padding: 'clamp(24px, 5vw, 48px)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'clamp(24px, 4vw, 40px)' }}>
           <div style={{ flex: '1 1 200px' }}>
             <div style={{ background: 'var(--surface-border)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
