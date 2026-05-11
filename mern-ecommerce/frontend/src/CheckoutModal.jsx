@@ -681,7 +681,7 @@ const CheckoutModal = ({ onClose }) => {
               {/* PayPal — launches native PayPal popup */}
               <PayPalScriptProvider
                 options={{
-                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
+                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AczhdKB-WZfL_hxuI1sCfxVDqlde39Y8R8an_CrtqCPp881DfdiJKDiQefvxzm5mS0JWzmK0R0RS4iiC",
                   currency: "USD",
                   intent: "capture",
                   "enable-funding": "paypal",
@@ -928,7 +928,7 @@ const CheckoutModal = ({ onClose }) => {
             {(paymentMethod === 'paypal' || paymentMethod === 'applepay') && (
               <PayPalScriptProvider
                 options={{
-                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
+                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AczhdKB-WZfL_hxuI1sCfxVDqlde39Y8R8an_CrtqCPp881DfdiJKDiQefvxzm5mS0JWzmK0R0RS4iiC",
                   currency: "USD",
                   intent: "capture",
                   "enable-funding": "applepay",
