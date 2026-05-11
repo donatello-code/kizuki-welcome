@@ -20,9 +20,9 @@ const modalOverlay = {
   padding: '20px',
 };
 
-const modalContent = {
-  background: '#141416',
-  border: '1px solid var(--surface-border)',
+const modalContent = (isCardFormOpen) => ({
+  background: isCardFormOpen ? '#1a3a1a' : '#141416',
+  border: isCardFormOpen ? '1px solid #2d5a2d' : '1px solid var(--surface-border)',
   borderRadius: 'var(--radius-lg)',
   padding: '40px',
   maxWidth: '480px',
@@ -30,7 +30,7 @@ const modalContent = {
   maxHeight: '90vh',
   overflowY: 'auto',
   position: 'relative',
-};
+});
 
 const closeBtn = {
   position: 'absolute',
@@ -585,7 +585,7 @@ const CheckoutModal = ({ onClose }) => {
   /* ── Render ── */
   return (
     <div style={modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={modalContent} className="hide-scrollbar">
+      <div style={modalContent(paymentMethod === 'card')} className="hide-scrollbar">
         <button style={closeBtn} onClick={onClose}>×</button>
 
         {/* Step Progress */}
@@ -674,8 +674,6 @@ const CheckoutModal = ({ onClose }) => {
                   marginBottom: '12px',
                   letterSpacing: '0.3px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#333'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#000'}
               >
                 <span>Apple Pay</span>
               </button>
