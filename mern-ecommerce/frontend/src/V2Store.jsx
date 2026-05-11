@@ -28,8 +28,8 @@ const V2Store = ({ onAddToCart }) => {
         // Fallback to hardcoded defaults if backend is unreachable
         if (mounted) {
           setProducts([
-            { id: 'p_1', name: 'Chessboard', price: 99, description: 'A canvas for the quiet storm within.', image: '/cheeseboard-hoodie.png', remaining: 14, needsSize: false },
-            { id: 'p_2', name: 'Hoodie', price: 99, description: 'Oversized, loose-fit cut that drapes like a second skin.', image: '/hoodie-hero.png', remaining: 47, needsSize: true },
+            { id: 'p_1', name: 'Chessboard', price: 99, description: 'A canvas for the quiet storm within.', image: '/cheeseboard-hoodie.png', remaining: 97, needsSize: false },
+            { id: 'p_2', name: 'Hoodie', price: 99, description: 'Oversized, loose-fit cut that drapes like a second skin.', image: '/hoodie-hero.png', remaining: 94, needsSize: true },
           ]);
         }
       } finally {

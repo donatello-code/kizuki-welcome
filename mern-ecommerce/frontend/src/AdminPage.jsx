@@ -288,22 +288,22 @@ const AdminPage = ({ onBackToStore }) => {
               style={{ flex: 1, padding: '12px' }}
               onClick={() => {
                 setProducts(prev => prev.map(p =>
-                  p.id === 'p_1' ? { ...p, quantity: 99 } : p
+                  p.id === 'p_1' ? { ...p, quantity: 97 } : p
                 ));
               }}
             >
-              Reset Chessboard → 99
+              Reset Chessboard → 97
             </button>
             <button
               className="btn btn-secondary"
               style={{ flex: 1, padding: '12px' }}
               onClick={() => {
                 setProducts(prev => prev.map(p =>
-                  p.id === 'p_2' ? { ...p, quantity: 100 } : p
+                  p.id === 'p_2' ? { ...p, quantity: 94 } : p
                 ));
               }}
             >
-              Reset Hoodie → 100
+              Reset Hoodie → 94
             </button>
           </div>
         )}
