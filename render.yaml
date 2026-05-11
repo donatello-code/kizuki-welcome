@@ -63,3 +63,32 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  # ─── Admin Subdomain: admin.kizuki.vip ────────────────────
+  - type: static
+    name: kizuki-admin
+    env: static
+    region: oregon
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    rootDir: mern-ecommerce/frontend
+    domains:
+      - admin.kizuki.vip
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://api.kizuki.vip
+      - key: VITE_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_PAYPAL_CLIENT_ID
+        sync: false
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
