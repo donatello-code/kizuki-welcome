@@ -111,7 +111,7 @@ const CartModal = ({ onClose, onCheckout }) => {
               }}
               onClick={onCheckout}
             >
-              Proceed to Checkout
+              Complete My Purchase
             </button>
           </>
         )}

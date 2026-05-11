@@ -73,6 +73,16 @@ db.exec(`
   )
 `);
 
+// Create cart table (phone-based cart persistence)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS carts (
+    phone TEXT PRIMARY KEY,
+    cart_data TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+console.log('✅ Cart table initialized');
+
 console.log('✅ SQLite database initialized at', dbPath);
 
 // ─── Email Transporter (Nodemailer) ───────────────────────
@@ -363,6 +373,47 @@ app.get('/api/admin/orders', (req, res) => {
   } catch (error) {
     console.error('❌ Admin orders error:', error);
     res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// ─── Cart API: GET /api/cart?phone=... ────────────────────
+app.get('/api/cart', (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+    const row = db.prepare('SELECT cart_data FROM carts WHERE phone = ?').get(phone);
+    if (row) {
+      res.json({ cart: JSON.parse(row.cart_data) });
+    } else {
+      res.json({ cart: [] });
+    }
+  } catch (error) {
+    console.error('❌ Cart fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch cart' });
+  }
+});
+
+// ─── Cart API: PUT /api/cart (save/update cart) ──────────
+app.put('/api/cart', (req, res) => {
+  try {
+    const { phone, cart } = req.body;
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+    const cartData = JSON.stringify(cart || []);
+    db.prepare(`
+      INSERT INTO carts (phone, cart_data, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(phone) DO UPDATE SET
+        cart_data = excluded.cart_data,
+        updated_at = CURRENT_TIMESTAMP
+    `).run(phone, cartData);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Cart save error:', error);
+    res.status(500).json({ error: 'Failed to save cart' });
   }
 });
 

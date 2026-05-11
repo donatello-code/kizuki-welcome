@@ -72,11 +72,6 @@ const inputStyle = {
   outline: 'none',
 };
 
-const inputFocus = {
-  borderColor: 'var(--accent)',
-  boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.2)',
-};
-
 const labelStyle = {
   display: 'block',
   fontSize: '0.8rem',
@@ -133,82 +128,6 @@ const btnBack = {
 };
 
 /* ─────────────────────────────────────────────
-   PaymentOption Component
-   ───────────────────────────────────────────── */
-const PaymentOption = ({ icon, name, description, onClick, isSelected }) => (
-  <div
-    onClick={onClick}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-      padding: '16px 20px',
-      borderRadius: 'var(--radius-md)',
-      background: isSelected ? 'rgba(99, 102, 241, 0.08)' : 'var(--surface)',
-      border: isSelected
-        ? '1px solid var(--accent)'
-        : '1px solid var(--surface-border)',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      marginBottom: '12px',
-    }}
-  >
-    <div style={{
-      width: '40px',
-      height: '40px',
-      borderRadius: '10px',
-      background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'var(--surface)',
-      border: '1px solid var(--surface-border)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '1.2rem',
-      flexShrink: 0,
-    }}>
-      {icon}
-    </div>
-    <div style={{ flex: 1 }}>
-      <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '2px' }}>{name}</div>
-      <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{description}</div>
-    </div>
-    {isSelected && (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-    )}
-  </div>
-);
-
-/* ─────────────────────────────────────────────
-   FlashyButton Component
-   ───────────────────────────────────────────── */
-const FlashyButton = ({ onClick, disabled, children }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    style={{
-      width: '100%',
-      padding: '16px',
-      borderRadius: 'var(--radius-sm)',
-      fontWeight: 600,
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      border: 'none',
-      fontFamily: 'inherit',
-      fontSize: '1rem',
-      background: disabled
-        ? 'var(--surface)'
-        : 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
-      color: 'white',
-      transition: 'all 0.3s ease',
-      opacity: disabled ? 0.5 : 1,
-      marginTop: '16px',
-    }}
-  >
-    {children}
-  </button>
-);
-
-/* ─────────────────────────────────────────────
    StepProgress Component
    ───────────────────────────────────────────── */
 const StepProgress = ({ steps, currentStep }) => (
@@ -263,7 +182,6 @@ const StepProgress = ({ steps, currentStep }) => (
 /* ─────────────────────────────────────────────
    CreditCardForm Component
    ───────────────────────────────────────────── */
-// Set to false to disable test prefill in production
 const USE_PREFILL = false;
 
 const CreditCardForm = ({ onSubmit, onBack, cartTotal, processing }) => {
@@ -419,7 +337,6 @@ const CheckoutModal = ({ onClose }) => {
   const { cart, checkoutData, setCheckoutData, clearCart } = useStore();
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState(null);
-  const [showAltFlow, setShowAltFlow] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -427,9 +344,7 @@ const CheckoutModal = ({ onClose }) => {
   const [cardProcessing, setCardProcessing] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingItemId, setEditingItemId] = useState(null);
-  const [shippingComplete, setShippingComplete] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
-  const [reviewPaymentMethod, setReviewPaymentMethod] = useState('card');
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -437,10 +352,12 @@ const CheckoutModal = ({ onClose }) => {
   const validateStep = (currentStep, data) => {
     const errs = {};
     if (currentStep === 1) {
+      // Payment step — no shipping validation needed here
+    } else if (currentStep === 2) {
       if (!data.fullName || data.fullName.trim().length < 2) errs.fullName = 'Full name is required (min 2 characters)';
       if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errs.email = 'Enter a valid email address';
       if (!data.phone || data.phone.replace(/\D/g, '').length < 10) errs.phone = 'Enter a valid phone number (min 10 digits)';
-    } else if (currentStep === 2) {
+    } else if (currentStep === 3) {
       if (!data.address || data.address.trim().length < 5) errs.address = 'Street address is required (min 5 characters)';
       if (!data.city || data.city.trim().length < 1) errs.city = 'City is required';
       if (!data.state || data.state.trim().length < 2) errs.state = 'State is required';
@@ -453,15 +370,12 @@ const CheckoutModal = ({ onClose }) => {
   const handleNext = useCallback((nextStep) => {
     const stepErrors = validateStep(step, checkoutData);
     setErrors((prev) => ({ ...prev, ...stepErrors }));
-    const fields = step === 1 ? ['fullName', 'email', 'phone'] : ['address', 'city', 'state', 'zip'];
+    const fields = step === 2 ? ['fullName', 'email', 'phone'] : step === 3 ? ['address', 'city', 'state', 'zip'] : [];
     const newTouched = {};
     fields.forEach((f) => { newTouched[f] = true; });
     setTouched((prev) => ({ ...prev, ...newTouched }));
 
     if (Object.keys(stepErrors).length === 0) {
-      if (step === 2) {
-        setShippingComplete(true);
-      }
       setIsTransitioning(true);
       setTimeout(() => {
         setStep(nextStep);
@@ -469,29 +383,6 @@ const CheckoutModal = ({ onClose }) => {
       }, 200);
     }
   }, [step, checkoutData]);
-
-  const handleSelectPaymentMethod = (method) => {
-    setPaymentMethod(method);
-    if (method === 'paypal' || method === 'applepay') {
-      setStep(4);
-    } else if (method === 'card') {
-      if (shippingComplete) {
-        setStep(3);
-      } else {
-        setStep(1);
-      }
-    }
-  };
-
-  const handleSkipToAltFlow = () => {
-    setShowAltFlow(true);
-    setPaymentMethod('card');
-    if (shippingComplete) {
-      setStep(3);
-    } else {
-      setStep(1);
-    }
-  };
 
   const handleCardSubmit = async (cardData) => {
     setCardProcessing(true);
@@ -556,8 +447,187 @@ const CheckoutModal = ({ onClose }) => {
       <div style={modalContent} className="hide-scrollbar">
         <button style={closeBtn} onClick={onClose}>×</button>
 
-        {/* ── Step 1: Identity ── */}
+        {/* Step Progress */}
+        <StepProgress steps={['Payment', 'Contact', 'Shipping']} currentStep={step} />
+
+        {/* ── Step 1: Payment (first screen) ── */}
         {step === 1 && (
+          <>
+            <h3 style={title}>Complete My Purchase</h3>
+            <p style={subtitle}>Enter your payment details to continue</p>
+
+            {/* Order Summary */}
+            <div style={summaryCard}>
+              {cart.map((item) => (
+                <div key={item.id} style={summaryRow}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>&times; {item.quantity}</div>
+                  </div>
+                  <div style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                    ${item.price * item.quantity}
+                  </div>
+                </div>
+              ))}
+              <div style={summaryTotal}>
+                <span>Total</span>
+                <span className="text-gradient">${cartTotal}</span>
+              </div>
+            </div>
+
+            {/* Payment Methods */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontWeight: 600, marginBottom: '12px', fontSize: '0.9rem' }}>Pay with</div>
+
+              {/* Apple Pay */}
+              <button
+                onClick={() => {
+                  setPaymentMethod('applepay');
+                  setStep(4);
+                }}
+                style={{
+                  height: '48px',
+                  width: '100%',
+                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  backgroundColor: '#000',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s ease',
+                  gap: '8px',
+                  marginBottom: '12px',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#333'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#000'}
+              >
+                <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
+                  <path d="M14.5 11.5C14.5 14.5 12 17 9 17C6 17 3.5 14.5 3.5 11.5C3.5 8.5 6 6 9 6C12 6 14.5 8.5 14.5 11.5Z" fill="white"/>
+                  <path d="M9 0C9 0 6 3 6 6C6 7.5 7 9 9 9C11 9 12 7.5 12 6C12 3 9 0 9 0Z" fill="white"/>
+                  <path d="M9 17C6 17 3.5 19 3.5 22H14.5C14.5 19 12 17 9 17Z" fill="white"/>
+                </svg>
+                <span>Apple Pay</span>
+              </button>
+
+              {/* PayPal */}
+              <PayPalScriptProvider
+                options={{
+                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
+                  currency: "USD",
+                  intent: "capture",
+                  "enable-funding": "paypal",
+                }}
+              >
+                <PayPalButtons
+                  style={{
+                    layout: "vertical",
+                    color: "gold",
+                    shape: "rect",
+                    label: "paypal",
+                    height: 48,
+                  }}
+                  createOrder={(data, actions) => {
+                    return actions.order.create({
+                      purchase_units: [{
+                        description: "KIZUKI Store Purchase",
+                        amount: { value: cartTotal.toFixed(2) },
+                      }],
+                    });
+                  }}
+                  onApprove={async (data, actions) => {
+                    try {
+                      const details = await actions.order.capture();
+                      console.log("Payment Details:", details);
+                      const orderData = {
+                        ...checkoutData,
+                        items: cart,
+                        total: cartTotal,
+                        paypalOrderId: data.orderID,
+                        payer: details.payer,
+                        paymentMethod: 'paypal',
+                        timestamp: new Date().toISOString(),
+                      };
+                      console.log('Order submitted:', orderData);
+                      clearCart();
+                      onClose();
+                    } catch (error) {
+                      console.error("Payment Capture Error:", error);
+                    }
+                  }}
+                  onError={(err) => console.error("PayPal Error:", err)}
+                  onCancel={() => console.log("User cancelled the payment process.")}
+                />
+              </PayPalScriptProvider>
+
+              {/* Credit Card */}
+              <button
+                onClick={() => setPaymentMethod('card')}
+                style={{
+                  height: '48px',
+                  width: '100%',
+                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  backgroundColor: '#2c2e2f',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s ease',
+                  gap: '8px',
+                  marginTop: '12px',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#444'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#2c2e2f'}
+              >
+                <span>💳</span> Credit Card
+              </button>
+
+              {/* Inline Credit Card Form */}
+              {paymentMethod === 'card' && (
+                <div style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--surface-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '20px',
+                  marginTop: '12px',
+                }}>
+                  <CreditCardForm
+                    onSubmit={handleCardSubmit}
+                    onBack={() => setPaymentMethod(null)}
+                    cartTotal={cartTotal}
+                    processing={cardProcessing}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Shipping info screen is next */}
+            <div style={{
+              textAlign: 'center',
+              marginTop: '16px',
+              padding: '12px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'rgba(99, 102, 241, 0.08)',
+              border: '1px solid rgba(99, 102, 241, 0.15)',
+              color: 'var(--text-secondary)',
+              fontSize: '0.85rem',
+            }}>
+              Shipping info screen is next
+            </div>
+          </>
+        )}
+
+        {/* ── Step 2: Contact Info ── */}
+        {step === 2 && (
           <>
             <h3 style={title}>Who Are You?</h3>
             <p style={subtitle}>We need to know where to send your order</p>
@@ -614,21 +684,35 @@ const CheckoutModal = ({ onClose }) => {
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
+              <button style={btnBack} onClick={() => setStep(1)}>Back</button>
               <button
-                style={btnBack}
-                onClick={onClose}
+                onClick={() => handleNext(3)}
+                disabled={isTransitioning}
+                style={{
+                  flex: 1,
+                  padding: '16px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 600,
+                  cursor: isTransitioning ? 'not-allowed' : 'pointer',
+                  border: 'none',
+                  fontFamily: 'inherit',
+                  fontSize: '1rem',
+                  background: isTransitioning
+                    ? 'var(--surface)'
+                    : 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
+                  color: 'white',
+                  transition: 'all 0.3s ease',
+                  opacity: isTransitioning ? 0.5 : 1,
+                }}
               >
-                Back
-              </button>
-              <FlashyButton onClick={() => handleNext(2)} disabled={isTransitioning}>
                 Continue to Shipping
-              </FlashyButton>
+              </button>
             </div>
           </>
         )}
 
-        {/* ── Step 2: Shipping Address ── */}
-        {step === 2 && (
+        {/* ── Step 3: Shipping Address ── */}
+        {step === 3 && (
           <>
             <h3 style={title}>Where To?</h3>
             <p style={subtitle}>Enter your shipping address</p>
@@ -713,326 +797,48 @@ const CheckoutModal = ({ onClose }) => {
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button style={btnBack} onClick={() => setStep(1)}>Back</button>
-              <FlashyButton onClick={() => handleNext(3)} disabled={isTransitioning}>
-                Continue to Review
-              </FlashyButton>
-            </div>
-          </>
-        )}
-
-        {/* ── Step 3: Review + Payment ── */}
-        {step === 3 && (
-          <>
-            <h3 style={title}>The Final Gambit</h3>
-            <p style={subtitle}>Review your move before committing</p>
-
-            {/* Expanded Items */}
-            <div style={summaryCard}>
-              {cart.flatMap((item) => {
-                const items = [];
-                for (let i = 0; i < item.quantity; i++) {
-                  const lineId = `${item.id}-${i}`;
-                  const isEditing = editMode && editingItemId === lineId;
-
-                  let nickname = null;
-                  if (item.id === 'p_1') {
-                    const nicknames = [
-                      'The Dark Square', 'Midnight Gambit', 'Silent Pawn', 'Rook\'s Shadow',
-                      'Queen\'s Void', 'Knight\'s Whisper', 'Bishop\'s Haze', 'Endgame',
-                      'Checkmate', 'The En Passant', 'Castled King', 'Forked Path',
-                      'Sacrifice', 'The Zwischenzug', 'Blitz Spirit', 'Stalemate',
-                      'The Sicilian', 'Queen\'s Gambit', 'King\'s Indian', 'The Berlin',
-                      'Nimzo-Indian', 'Grünfeld', 'Caro-Kann', 'The Dragon',
-                      'The Najdorf', 'The Marshall', 'The Botvinnik', 'The Tal',
-                      'The Petrosian', 'The Karpov', 'The Kasparov', 'The Fischer',
-                      'The Morphy', 'The Capablanca', 'The Alekhine', 'The Lasker',
-                      'The Steinitz', 'The Philidor', 'The Reti', 'The Larsen',
-                      'The Pirc', 'The Modern', 'The Dutch', 'The Benoni',
-                      'The Trompowsky', 'The London', 'The Colle', 'The Torre',
-                      'The Stonewall', 'The Hypermodern',
-                    ];
-                    nickname = nicknames[Math.floor(Math.random() * nicknames.length)];
-                  }
-
-                  return (
-                    <div key={lineId} style={{
-                      ...summaryRow,
-                      flexDirection: 'column',
-                      alignItems: 'stretch',
-                      borderBottom: i < item.quantity - 1 ? '1px solid var(--surface-border)' : 'none',
-                      padding: '10px 0',
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</div>
-                          {nickname && (
-                            <div style={{ color: 'var(--accent)', fontSize: '0.8rem', fontStyle: 'italic', marginTop: '2px' }}>
-                              &ldquo;{nickname}&rdquo;
-                            </div>
-                          )}
-                          {item.selectedSize && (
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>
-                              Size: {item.selectedSize}
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                            ${item.price}
-                          </div>
-                          {!editMode && (
-                            <button
-                              onClick={() => { setEditMode(true); setEditingItemId(lineId); }}
-                              style={{
-                                background: 'none',
-                                border: '1px solid var(--surface-border)',
-                                color: 'var(--text-secondary)',
-                                cursor: 'pointer',
-                                fontFamily: 'inherit',
-                                fontSize: '0.75rem',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                transition: 'all 0.2s ease',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              Edit
-                            </button>
-                          )}
-                          {isEditing && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <button
-                                onClick={() => {
-                                  const { addToCart, removeFromCart } = useStore.getState();
-                                  removeFromCart(item.id);
-                                  setEditingItemId(null);
-                                  setEditMode(false);
-                                }}
-                                style={{
-                                  width: '28px',
-                                  height: '28px',
-                                  borderRadius: '50%',
-                                  border: '1px solid var(--surface-border)',
-                                  background: 'transparent',
-                                  color: 'var(--text-primary)',
-                                  cursor: 'pointer',
-                                  fontFamily: 'inherit',
-                                  fontSize: '1rem',
-                                  fontWeight: 700,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.2s ease',
-                                }}
-                              >
-                                &minus;
-                              </button>
-                              <span style={{ fontWeight: 700, fontSize: '0.9rem', minWidth: '16px', textAlign: 'center' }}>1</span>
-                              <button
-                                onClick={() => {
-                                  const { addToCart } = useStore.getState();
-                                  addToCart(item);
-                                  setEditingItemId(null);
-                                  setEditMode(false);
-                                }}
-                                style={{
-                                  width: '28px',
-                                  height: '28px',
-                                  borderRadius: '50%',
-                                  border: '1px solid var(--surface-border)',
-                                  background: 'transparent',
-                                  color: 'var(--text-primary)',
-                                  cursor: 'pointer',
-                                  fontFamily: 'inherit',
-                                  fontSize: '1rem',
-                                  fontWeight: 700,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.2s ease',
-                                }}
-                              >
-                                +
-                              </button>
-                              <button
-                                onClick={() => { setEditingItemId(null); setEditMode(false); }}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: 'var(--accent)',
-                                  cursor: 'pointer',
-                                  fontFamily: 'inherit',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 600,
-                                  padding: '4px 6px',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                Confirm
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-                return items;
-              })}
-              <div style={summaryTotal}>
-                <span>Total</span>
-                <span className="text-gradient">${cartTotal}</span>
-              </div>
-            </div>
-
-            <div style={summaryCard}>
-              <div style={{ fontWeight: 600, marginBottom: '8px', fontSize: '0.9rem' }}>Shipping To</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.6 }}>
-                {checkoutData.fullName}<br />
-                {checkoutData.address}{checkoutData.apt ? `, ${checkoutData.apt}` : ''}<br />
-                {checkoutData.city}, {checkoutData.state} {checkoutData.zip}
-              </div>
-            </div>
-
-            {/* Payment Options — Apple Pay central */}
-            <div style={{ marginTop: '16px' }}>
-              <div style={{ fontWeight: 600, marginBottom: '12px', fontSize: '0.9rem' }}>Payment Method</div>
-
-              {/* Apple Pay — big black button, central */}
+              <button style={btnBack} onClick={() => setStep(2)}>Back</button>
               <button
                 onClick={() => {
-                  setPaymentMethod('applepay');
-                  setStep(4);
+                  // Final submit — all info collected
+                  const stepErrors = validateStep(3, checkoutData);
+                  setErrors((prev) => ({ ...prev, ...stepErrors }));
+                  const fields = ['address', 'city', 'state', 'zip'];
+                  const newTouched = {};
+                  fields.forEach((f) => { newTouched[f] = true; });
+                  setTouched((prev) => ({ ...prev, ...newTouched }));
+                  if (Object.keys(stepErrors).length === 0) {
+                    // Submit order with all collected data
+                    alert('Order submitted! Thank you for your purchase.');
+                    clearCart();
+                    onClose();
+                  }
                 }}
+                disabled={isTransitioning}
                 style={{
-                  height: '48px',
-                  width: '100%',
-                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  backgroundColor: '#000',
-                  color: 'white',
+                  flex: 1,
+                  padding: '16px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 600,
+                  cursor: isTransitioning ? 'not-allowed' : 'pointer',
                   border: 'none',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
-                  gap: '8px',
-                  marginBottom: '12px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#333'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#000'}
-              >
-                <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
-                  <path d="M14.5 11.5C14.5 14.5 12 17 9 17C6 17 3.5 14.5 3.5 11.5C3.5 8.5 6 6 9 6C12 6 14.5 8.5 14.5 11.5Z" fill="white"/>
-                  <path d="M9 0C9 0 6 3 6 6C6 7.5 7 9 9 9C11 9 12 7.5 12 6C12 3 9 0 9 0Z" fill="white"/>
-                  <path d="M9 17C6 17 3.5 19 3.5 22H14.5C14.5 19 12 17 9 17Z" fill="white"/>
-                </svg>
-                <span>Apple Pay</span>
-              </button>
-
-              {/* PayPal — native button */}
-              <PayPalScriptProvider
-                options={{
-                  "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "AQub0ybcBhKw3l3eNbbIaChnt6irK9TPL_laWYIeEOlmdZd_ARJsD7hwPqPL_23uLsRoPRMk5NqHSdtS",
-                  currency: "USD",
-                  intent: "capture",
-                  "enable-funding": "paypal",
-                }}
-              >
-                <PayPalButtons
-                  style={{
-                    layout: "vertical",
-                    color: "gold",
-                    shape: "rect",
-                    label: "paypal",
-                    height: 48,
-                  }}
-                  createOrder={(data, actions) => {
-                    return actions.order.create({
-                      purchase_units: [{
-                        description: "KIZUKI Store Purchase",
-                        amount: { value: cartTotal.toFixed(2) },
-                      }],
-                    });
-                  }}
-                  onApprove={async (data, actions) => {
-                    try {
-                      const details = await actions.order.capture();
-                      console.log("Payment Details:", details);
-                      const orderData = {
-                        ...checkoutData,
-                        items: cart,
-                        total: cartTotal,
-                        paypalOrderId: data.orderID,
-                        payer: details.payer,
-                        paymentMethod: 'paypal',
-                        timestamp: new Date().toISOString(),
-                      };
-                      console.log('Order submitted:', orderData);
-                      clearCart();
-                      onClose();
-                    } catch (error) {
-                      console.error("Payment Capture Error:", error);
-                    }
-                  }}
-                  onError={(err) => console.error("PayPal Error:", err)}
-                  onCancel={() => console.log("User cancelled the payment process.")}
-                />
-              </PayPalScriptProvider>
-
-              {/* Credit Card — custom button matching Apple Pay style */}
-              <button
-                onClick={() => setReviewPaymentMethod('card')}
-                style={{
-                  height: '48px',
-                  width: '100%',
-                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  backgroundColor: '#2c2e2f',
+                  fontFamily: 'inherit',
+                  fontSize: '1rem',
+                  background: isTransitioning
+                    ? 'var(--surface)'
+                    : 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
                   color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
-                  gap: '8px',
-                  marginTop: '12px',
+                  transition: 'all 0.3s ease',
+                  opacity: isTransitioning ? 0.5 : 1,
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#444'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#2c2e2f'}
               >
-                <span>💳</span> Credit Card
+                Place Order — ${cartTotal}
               </button>
-
-              {/* Inline Credit Card Form */}
-              {reviewPaymentMethod === 'card' && (
-                <div style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--surface-border)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '20px',
-                  marginTop: '12px',
-                }}>
-                  <CreditCardForm
-                    onSubmit={handleCardSubmit}
-                    onBack={() => setStep(2)}
-                    cartTotal={cartTotal}
-                    processing={cardProcessing}
-                  />
-                </div>
-              )}
             </div>
           </>
         )}
 
-        {/* ── Step 4: PayPal Direct ── */}
+        {/* ── Step 4: PayPal/Apple Pay Direct ── */}
         {step === 4 && (
           <>
             <h3 style={title}>Complete Your Purchase</h3>
