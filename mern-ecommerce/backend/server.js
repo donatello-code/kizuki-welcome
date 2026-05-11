@@ -212,23 +212,29 @@ if (productCount.count === 0) {
   insert.run(
     'p_1', 'Chessboard', 9900,
     'A canvas for the quiet storm within. This is not merely a board — it is a second skin woven from midnight threads and the ghosts of forgotten games. Each square remembers the clack of ivory, the geometry of sacrifice, the silence between moves. Play on it, and the board follows you into the world. The pieces are already in play.',
-    '/cheeseboard-hoodie.png', 0, 95
+    '/cheeseboard-hoodie.png', 0, 92
   );
 
   insert.run(
     'p_2', 'Hoodie', 9900,
     'Oversized, loose-fit cut that drapes like a second skin. Crafted from premium extra-thick sheer black fabric — heavy enough to hold its shape, light enough to move with you. The darkness is the point: a void that absorbs light, a silhouette that commands without shouting.',
-    '/hoodie-hero.png', 1, 89
+    '/hoodie-hero.png', 1, 86
   );
-  console.log('✅ Products seeded: p_1=95, p_2=89');
+  console.log('✅ Products seeded: p_1=92, p_2=86');
 }
 
-// ─── Subtract one chessboard from existing DB (migration) ─
-// If p_1 is still 96 from the original seed, decrement to 95
+// ─── Subtract 3 from both items (migration) ──────────────
+// If p_1 is still 95 from the previous seed, decrement to 92
 const p1 = db.prepare("SELECT quantity FROM products WHERE id = 'p_1'").get();
-if (p1 && p1.quantity === 96) {
-  db.prepare("UPDATE products SET quantity = 95 WHERE id = 'p_1'").run();
-  console.log('📉 Chessboard quantity adjusted: 96 → 95');
+if (p1 && p1.quantity === 95) {
+  db.prepare("UPDATE products SET quantity = 92 WHERE id = 'p_1'").run();
+  console.log('📉 Chessboard quantity adjusted: 95 → 92');
+}
+// If p_2 is still 89 from the previous seed, decrement to 86
+const p2 = db.prepare("SELECT quantity FROM products WHERE id = 'p_2'").get();
+if (p2 && p2.quantity === 89) {
+  db.prepare("UPDATE products SET quantity = 86 WHERE id = 'p_2'").run();
+  console.log('📉 Hoodie quantity adjusted: 89 → 86');
 }
 
 // ─── GET /api/products ────────────────────────────────────

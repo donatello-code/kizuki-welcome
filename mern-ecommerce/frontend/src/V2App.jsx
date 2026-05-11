@@ -5,108 +5,12 @@ import AdminPage from './AdminPage';
 import CartModal from './CartModal';
 import CheckoutModal from './CheckoutModal';
 import ChessGame from './chess/ChessGame';
+import ChessLoadingScreen from './chess/ChessLoadingScreen';
 import useStore from './store';
 import './index.css';
 
 // ─── Image preloader ──────────────────────────────────────
 const STORE_IMAGES = ['/cheeseboard-hoodie.png', '/hoodie-hero.png'];
-
-// ─── Loading Screen ───────────────────────────────────────
-const LoadingScreen = ({ onComplete }) => {
-  const [progress, setProgress] = useState(0);
-
-  // Preload store images in the background while loading screen plays
-  useEffect(() => {
-    STORE_IMAGES.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
-  }, []);
-
-  useEffect(() => {
-    const start = Date.now();
-    const duration = 3000; // 3 seconds
-
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const pct = Math.min((elapsed / duration) * 100, 100);
-      setProgress(pct);
-      if (pct >= 100) {
-        clearInterval(interval);
-        onComplete();
-      }
-    }, 30);
-
-    return () => clearInterval(interval);
-  }, [onComplete]);
-
-  return (
-    <div style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      background: 'radial-gradient(circle at center, #1a1a2e, #0a0a0c)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 9999,
-      fontFamily: "'Outfit', sans-serif",
-    }}>
-      {/* Logo / Brand */}
-      <div style={{
-        fontSize: 'clamp(2.5rem, 6vw, 4rem)',
-        fontWeight: 800,
-        letterSpacing: '4px',
-        marginBottom: '8px',
-      }}>
-        KIZUKI<span style={{
-          background: 'linear-gradient(135deg, #6366f1, #ec4899)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>.</span>
-      </div>
-      <div style={{
-        color: '#a1a1aa',
-        fontSize: '0.85rem',
-        letterSpacing: '6px',
-        textTransform: 'uppercase',
-        marginBottom: '48px',
-      }}>
-        Two Silhouettes. One Legacy.
-      </div>
-
-      {/* Progress Bar */}
-      <div style={{
-        width: 'clamp(160px, 30vw, 280px)',
-        height: '2px',
-        background: 'rgba(255,255,255,0.08)',
-        borderRadius: '2px',
-        overflow: 'hidden',
-        marginBottom: '16px',
-      }}>
-        <div style={{
-          width: `${progress}%`,
-          height: '100%',
-          background: 'linear-gradient(90deg, #6366f1, #ec4899)',
-          borderRadius: '2px',
-          transition: 'width 0.1s linear',
-        }} />
-      </div>
-
-      <div style={{
-        color: '#6366f1',
-        fontSize: '0.75rem',
-        letterSpacing: '2px',
-        fontWeight: 600,
-      }}>
-        {Math.round(progress)}%
-      </div>
-    </div>
-  );
-};
 
 // ─── Main App ─────────────────────────────────────────────
 const V2App = () => {
@@ -181,7 +85,7 @@ const V2App = () => {
   if (showLoading) {
     return (
       <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
-        <LoadingScreen onComplete={handleLoadingComplete} />
+        <ChessLoadingScreen onComplete={handleLoadingComplete} />
       </div>
     );
   }
