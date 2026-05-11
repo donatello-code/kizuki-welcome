@@ -715,6 +715,7 @@ const CheckoutModal = ({ onClose }) => {
               </PayPalScriptProvider>
 
               {/* PayPal Card Pay — inline credit card form */}
+              {/*
               <button
                 onClick={() => setPaymentMethod('card')}
                 style={{
@@ -740,12 +741,13 @@ const CheckoutModal = ({ onClose }) => {
               >
                 <span>PayPal Card Pay</span>
               </button>
+              */}
 
               {/* Inline Credit Card Form */}
               {paymentMethod === 'card' && (
                 <div style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--surface-border)',
+                  background: '#1a3a1a',
+                  border: '1px solid #2d5a2d',
                   borderRadius: 'var(--radius-md)',
                   padding: '20px',
                   marginTop: '12px',

@@ -47,86 +47,42 @@ APP ENTRY POINT: V2App (rendered by main.jsx)
                                               │
                                               ▼
   ┌─────────────────────────────────────────────────────────┐
-  │  STEP 0: Payment Method Selection                       │
+  │  STEP 1: Payment Method Selection + Pay                 │
   │  ┌─────────────────────────────────────────────────┐    │
-  │  │  ○ PayPal (→ step 4)                            │    │
-  │  │  ○ Apple Pay (→ step 4)                         │    │
-  │  │  ○ Credit Card (→ dynamic routing)              │    │
-  │  │     ├── shippingComplete? → step 3 (Review)     │    │
-  │  │     └── !shippingComplete → step 1 (Identity)   │    │
-  │  │  ○ "Pay after shipping" (→ dynamic routing)     │    │
-  │  │     ├── shippingComplete? → step 3 (Review)     │    │
-  │  │     └── !shippingComplete → step 1 (Identity)   │    │
+  │  │  Order Summary (cart items, subtotal, shipping,  │    │
+  │  │  free shipping progress)                         │    │
+  │  │                                                   │    │
+  │  │  ○ Apple Pay (native ApplePaySession, one tap)   │    │
+  │  │     ├── Supported → Apple Pay sheet opens        │    │
+  │  │     └── Unsupported → error modal shown          │    │
+  │  │                                                   │    │
+  │  │  ○ PayPal (inline PayPal Smart Buttons)          │    │
+  │  │     ├── createOrder → onApprove → capture        │    │
+  │  │     └── On success: clearCart, close modal       │    │
+  │  │                                                   │    │
+  │  │  ○ Credit Card (inline form, expands on click)   │    │
+  │  │     ├── Cardholder Name, Card Number             │    │
+  │  │     ├── Expiry (MM/YY), CVV                      │    │
+  │  │     ├── Validates: format, expiry date           │    │
+  │  │     └── [Pay $XXX] → POST /api/orders            │    │
+  │  │                                                   │    │
+  │  │  Shipping info screen is next (info banner)      │    │
   │  └─────────────────────────────────────────────────┘    │
   └─────────────────────────────────────────────────────────┘
                            │
                            ▼
   ┌─────────────────────────────────────────────────────────┐
-  │  STEP 1: Identity (Shipping Info)                       │
+  │  STEP 2: Shipping (one field at a time)                │
   │  ┌─────────────────────────────────────────────────┐    │
-  │  │  Full Name, Email, Phone                        │    │
-  │  │  Validates: required, format checks             │    │
-  │  │  Back → step 0 (or close if alt flow)           │    │
-  │  │  Next → step 2                                  │    │
-  │  └─────────────────────────────────────────────────┘    │
-  └─────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │  STEP 2: Shipping Address                              │
-  │  ┌─────────────────────────────────────────────────┐    │
-  │  │  Street, Apt (optional), City, State, ZIP       │    │
+  │  │  Shipping Label Preview (maroon card, white text)│    │
+  │  │  Field progress: "3 of 8"                       │    │
+  │  │  Fields (one at a time, auto-advance):          │    │
+  │  │  ├── Full Name, Email, Phone                    │    │
+  │  │  ├── Street Address, Apt (optional)             │    │
+  │  │  ├── City, State, ZIP Code                      │    │
   │  │  Validates: required, format checks             │    │
   │  │  Back → step 1                                  │    │
-  │  │  Next → step 3 (Review)                         │    │
-  │  │  On success: shippingComplete = true            │    │
-  │  └─────────────────────────────────────────────────┘    │
-  └─────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │  STEP 3: Review + Credit Card Payment                  │
-  │  ┌─────────────────────────────────────────────────┐    │
-  │  │  EXPANDED ITEMS (individual line items):        │    │
-  │  │  ┌─────────────────────────────────────────┐    │    │
-  │  │  │  Symbolic Chessboard "The Dark Square"   │    │    │
-  │  │  │  Symbolic Chessboard "Midnight Gambit"   │    │    │
-  │  │  │  Chessboard in my Heart (Size: M)        │    │    │
-  │  │  │  Chessboard in my Heart (Size: L)        │    │    │
-  │  │  │  ...each with [Edit] button              │    │    │
-  │  │  └─────────────────────────────────────────┘    │    │
-  │  │  EDIT MODE:                                     │    │
-  │  │  ┌─────────────────────────────────────────┐    │    │
-  │  │  │  [−]  1  [+]  [Confirm]                 │    │    │
-  │  │  │  − removes item from cart                │    │    │
-  │  │  │  + adds another of same item             │    │    │
-  │  │  │  Confirm exits edit mode                 │    │    │
-  │  │  └─────────────────────────────────────────┘    │    │
-  │  │  ───────────────────────────────────────────    │    │
-  │  │  TOTAL: $XXX                                    │    │
-  │  │  ───────────────────────────────────────────    │    │
-  │  │  SHIPPING TO:                                   │    │
-  │  │  Full Name                                      │    │
-  │  │  Address, Apt                                   │    │
-  │  │  City, State ZIP                                │    │
-  │  │  ───────────────────────────────────────────    │    │
-  │  │  CREDIT CARD FORM:                              │    │
-  │  │  Cardholder Name, Card Number                   │    │
-  │  │  Expiry (MM/YY), CVV                            │    │
-  │  │  Validates: format, expiry date                 │    │
-  │  │  [Back → step 2]  [Pay $XXX]                   │    │
-  │  │  On success: paymentVerified = true             │    │
-  │  └─────────────────────────────────────────────────┘    │
-  └─────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │  STEP 4: PayPal / Apple Pay Direct                     │
-  │  (Only reached from step 0 if PayPal/Apple Pay)        │
-  │  ┌─────────────────────────────────────────────────┐    │
-  │  │  Summary: cart items (grouped by quantity)      │    │
-  │  │  PayPal Smart Buttons (or Apple Pay)            │    │
-  │  │  Back → step 0                                  │    │
+  │  │  On last field submit → alert + clearCart + close│    │
   │  └─────────────────────────────────────────────────┘    │
   └─────────────────────────────────────────────────────────┘
 
@@ -156,41 +112,46 @@ APP ENTRY POINT: V2App (rendered by main.jsx)
   VALIDATION RULES
 ═══════════════════════════════════════════════════════════════
 
-  Step 1 (Identity):
-  ├── fullName: required, min 2 chars
-  ├── email: required, regex /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  └── phone: required, min 10 digits (strips non-digits)
-
-  Step 2 (Shipping):
-  ├── address: required, min 5 chars
-  ├── city: required
-  ├── state: required, min 2 chars
-  └── zip: required, min 5 digits (strips non-digits)
-
-  Step 3 (Credit Card):
+  Step 1 — Credit Card Form:
   ├── cardName: required
   ├── cardNumber: 13-19 digits (formatted as XXXX XXXX XXXX XXXX)
   ├── expiry: 4 digits MM/YY, valid month, not expired
   └── cvv: 3-4 digits
 
+  Step 2 — Shipping Fields (one at a time):
+  ├── fullName: required, min 2 chars
+  ├── email: required, regex /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  ├── phone: required, min 10 digits (strips non-digits)
+  ├── address: required, min 5 chars
+  ├── city: required
+  ├── state: required, min 2 chars
+  └── zip: required, min 5 digits (strips non-digits)
+
 ═══════════════════════════════════════════════════════════════
   PAYMENT PROCESSING
 ═══════════════════════════════════════════════════════════════
 
-  Credit Card (step 3):
-  ├── Creates PayPal order via REST API (server-side token needed)
-  ├── Captures order via PayPal REST API
-  ├── On COMPLETED: logs order, clears cart, closes modal
-  └── On failure: shows alert
+  Apple Pay (Step 1 — native ApplePaySession):
+  ├── Checks ApplePaySession.canMakePayments()
+  ├── If unsupported → shows error modal (use PayPal or CC)
+  ├── Creates ApplePaySession(6, paymentRequest)
+  ├── onvalidatemerchant → POST /api/apple-pay/validate-merchant
+  ├── onpaymentauthorized → POST /api/orders with applePayToken
+  ├── On success: ApplePaySession.STATUS_SUCCESS, clearCart, close
+  └── On failure: ApplePaySession.STATUS_FAILURE, error modal
 
-  PayPal (step 4):
+  PayPal (Step 1 — inline PayPal Smart Buttons):
   ├── Uses @paypal/react-paypal-js SDK
   ├── createOrder → onApprove → capture
   ├── On success: logs order, clears cart, closes modal
   └── On error/cancel: logs to console
 
-  Apple Pay (step 4):
-  └── Handled via PayPal SDK (enable-funding: "applepay")
+  Credit Card (Step 1 — inline form):
+  ├── Collects cardName, cardNumber, expiry, cvv
+  ├── Validates: required fields, format, expiry date
+  ├── POST /api/orders with card details
+  ├── On success: paymentVerified = true, clearCart, close
+  └── On failure: alert with error message
 
 ═══════════════════════════════════════════════════════════════
   COMPONENT TREE
@@ -205,14 +166,14 @@ APP ENTRY POINT: V2App (rendered by main.jsx)
   ├── CartModal
   └── CheckoutModal
       ├── StepProgress
-      ├── FlashyButton
-      ├── PaymentOption
       ├── CreditCardForm
-      └── PayPalScriptProvider > PayPalButtons
+      ├── PayPalScriptProvider > PayPalButtons
+      └── ApplePaySession (native, inline in Step 1)
 
 ═══════════════════════════════════════════════════════════════
   ENVIRONMENT VARIABLES (from .env or import.meta.env)
 ═══════════════════════════════════════════════════════════════
 
   VITE_PAYPAL_CLIENT_ID — PayPal client ID for SDK
-  VITE_PAYPAL_ACCESS_TOKEN — PayPal REST API token (for card processing)
+  VITE_BACKEND_URL — Backend API URL (for order submission)
+  VITE_STRIPE_PUBLISHABLE_KEY — Stripe key (legacy, unused)
