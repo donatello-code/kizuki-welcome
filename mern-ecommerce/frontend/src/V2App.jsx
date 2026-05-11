@@ -4,12 +4,24 @@ import V2Store from './V2Store';
 import AdminPage from './AdminPage';
 import CartModal from './CartModal';
 import CheckoutModal from './CheckoutModal';
+import ChessGame from './chess/ChessGame';
 import useStore from './store';
 import './index.css';
+
+// ─── Image preloader ──────────────────────────────────────
+const STORE_IMAGES = ['/cheeseboard-hoodie.png', '/hoodie-hero.png'];
 
 // ─── Loading Screen ───────────────────────────────────────
 const LoadingScreen = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
+
+  // Preload store images in the background while loading screen plays
+  useEffect(() => {
+    STORE_IMAGES.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
 
   useEffect(() => {
     const start = Date.now();
@@ -30,11 +42,11 @@ const LoadingScreen = ({ onComplete }) => {
 
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       top: 0,
       left: 0,
-      width: '100vw',
-      height: '100vh',
+      width: '100%',
+      height: '100%',
       background: 'radial-gradient(circle at center, #1a1a2e, #0a0a0c)',
       display: 'flex',
       flexDirection: 'column',
@@ -135,6 +147,8 @@ const V2App = () => {
       const hash = window.location.hash.replace('#', '');
       if (hash === 'admin') {
         setCurrentView('admin');
+      } else if (hash === 'chess') {
+        setCurrentView('chess');
       } else if (hash === 'store') {
         setCurrentView('store');
       } else if (hash === 'landing') {
@@ -165,7 +179,19 @@ const V2App = () => {
 
   // ─── Loading Screen ────────────────────────────────────
   if (showLoading) {
-    return <LoadingScreen onComplete={handleLoadingComplete} />;
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
+        <LoadingScreen onComplete={handleLoadingComplete} />
+      </div>
+    );
+  }
+
+
+  // ─── Chess View (full page, no store nav/footer) ──────
+  if (currentView === 'chess') {
+    return (
+      <ChessGame onBack={() => navigateTo('store')} />
+    );
   }
 
   // ─── Admin View (no nav/footer) ────────────────────────
@@ -201,7 +227,26 @@ const V2App = () => {
           KIZUKI<span className="text-gradient">.</span>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <button
+            onClick={() => navigateTo('chess')}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--surface-border)',
+              color: 'var(--text-primary)',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-sm)',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              fontFamily: 'inherit',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => { e.target.style.background = 'rgba(255,255,255,0.08)'; }}
+            onMouseLeave={(e) => { e.target.style.background = 'transparent'; }}
+          >
+            ♚ Chess
+          </button>
           <div 
             style={{ 
               display: 'flex', 
